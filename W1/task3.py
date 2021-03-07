@@ -3,7 +3,6 @@ from os import path
 import numpy as np
 
 def read_flow (of_file):
-    print(of_file)
     im = cv2.imread(of_file, cv2.IMREAD_UNCHANGED).astype(np.double)
 
     im_u = (im[:, :, 2] - 2 ** 15) / 64
@@ -19,6 +18,29 @@ def read_flow (of_file):
 
     return optical_flow
 
+def compute_msen (ground_truth, predicted):
+    u_diff = ground_truth[:,:,0] - predicted[:,:,0]
+    v_diff = ground_truth[:,:,1] - predicted[:,:,1]
+
+    se = np.sqrt(u_diff ** 2 + v_diff ** 2)
+    sen = se[ground_truth[:,:,2]==1]
+
+    msen = np.mean(sen)
+
+    return msen,sen
+
+def compute_pepn(ground_truth,predicted,th=3):
+
+    _,sen = compute_msen(ground_truth,predicted)
+
+    n_pixels_n= len(sen)
+
+    error_count = np.sum(sen > th)
+
+    pepn = (error_count/n_pixels_n) * 100
+
+    return pepn
+
 
 def task3_1(): 
     print("Task 3 - Quantitative evaluation of optical flow")
@@ -30,8 +52,17 @@ def task3_1():
     for frame in frames:
         gt_flow = read_flow(path.join(ground_truth_path, frame))
         estimated_flow = read_flow(path.join(estimated_path, "LKflow_" + frame))
-        print(gt_flow)
-        print(estimated_flow)
+    
+        msen,sen = compute_msen(gt_flow,estimated_flow)
+
+        pepn = compute_pepn(gt_flow,estimated_flow)
+        print(msen,pepn) # put the outputs nicer
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
