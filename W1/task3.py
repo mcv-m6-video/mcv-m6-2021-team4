@@ -29,7 +29,7 @@ def task3_1():
 
     for frame in frames:
         gt_flow = read_flow(path.join(ground_truth_path, frame))
-        estimated_flow = read_flow(path.join(estimated_path, frame))
+        estimated_flow = read_flow(path.join(estimated_path, "LKflow_" + frame))
         print(gt_flow)
         print(estimated_flow)
 
