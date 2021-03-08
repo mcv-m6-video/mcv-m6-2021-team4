@@ -1,2 +1,7 @@
 .vscode/*
+<<<<<<< HEAD
 .idea/*
+=======
+.gitignore
+.DS_Store
+>>>>>>> 0a9067226a45cbb7af1faf05ad497adf6d7883c0
