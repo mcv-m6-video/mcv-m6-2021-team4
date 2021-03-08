@@ -66,7 +66,7 @@ def voc_eval(detections, annotations, ovthresh=0.5,is_confidence=True):
     npos = 0
 
     for frame_id, boxes in annotations.items():
-        bbox = np.array([det.box() for det in boxes])
+        bbox = np.array([det.box for det in boxes])
         det = [False] * len(boxes)
         npos += len(boxes)
         class_recs.append({"bbox": bbox, "det": det}) 
@@ -74,8 +74,8 @@ def voc_eval(detections, annotations, ovthresh=0.5,is_confidence=True):
    
  
     # read detections
-    image_ids = [x.id for x in detections]
-    BB = np.array([x.box() for x in detections]).reshape(-1, 4)
+    image_ids = [x.frame for x in detections]
+    BB = np.array([x.box for x in detections]).reshape(-1, 4)
 
     if is_confidence:
         confidence = np.array([float(x.confidence) for x in detections])
@@ -119,3 +119,48 @@ def voc_eval(detections, annotations, ovthresh=0.5,is_confidence=True):
     ap = voc_ap(rec, prec)
 
     return rec, prec, ap
+
+  
+  
+def map(annotations, detections):
+    """
+    Mean Average Precision.
+    annotations (Grouped by Frame)
+    detections 
+
+    """
+	ap, prec, rec = average_precision(annotations, detections)
+
+    prec = np.mean(prec)
+    rec = np.mean(rec)
+    map = np.mean(ap)
+
+    return map, prec, rec  
+  
+
+  
+# To move to a utils or similar
+def group_by_frame(detections):
+    grouped = defaultdict(list)
+    for det in detections:
+        grouped[det.frame].append(det)
+    return OrderedDict(sorted(grouped.items()))    
+  
+'''
+###Demo
+from collections import defaultdict, OrderedDict
+
+
+annotations_path = 'Data/ai_challenge_s03_c010-full_annotation.xml'
+detections_path = 'Data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt'
+
+annotations = read_annotations(annotations_path)
+detections = read_detections(detections_path)
+
+annotations_grouped = group_by_frame(annotations)
+
+rec, prec, ap = voc_eval(detections,annotations_grouped,0.5,is_confidence=True)
+print(ap)
+
+
+'''
