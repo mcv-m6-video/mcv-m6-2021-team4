@@ -34,8 +34,8 @@ def compute_msen (ground_truth, predicted):
     
     sen = se[ground_truth[:,:,2]==1]
 
-    #se[ground_truth[:,:,2]==0] = 0 #To exclude the non valid
-    img_plot = plt.imshow(ground_truth)
+    se[ground_truth[:,:,2]==0] = 0 #To exclude the non valid
+    img_plot = plt.imshow(se)
     img_plot.set_cmap("nipy_spectral")
     plt.colorbar()
     plt.show()
