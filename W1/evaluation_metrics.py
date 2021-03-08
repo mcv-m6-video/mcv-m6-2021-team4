@@ -45,6 +45,13 @@ def voc_iou(BBGT,bb):
     overlaps = inters/uni
     return overlaps
 
+def mean_iou(BBGT, bb):
+    BBGT = np.array(BBGT).reshape(-1, 4)
+    bb = np.array(bb).reshape(-1, 4)
+    overlaps = voc_iou(BBGT, bb)
+    
+    return np.mean(np.max(overlaps, axis=1))
+
 def voc_eval(detections, annotations, ovthresh=0.5,is_confidence=True):
     """rec, prec, ap = voc_eval(detections,
                                 annotations
