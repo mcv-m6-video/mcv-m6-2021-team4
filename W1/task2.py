@@ -1,3 +1,7 @@
+import cv2
+import matplotlib.pyplot as plt
+from noise_generator import add_noise
+from utils import draw_boxes
 import numpy as np
 from aicity_reader import read_annotations, read_detections, group_by_frame
 from voc_evaluation import voc_iou
@@ -6,10 +10,12 @@ import os
 
 def task2(gt_path, det_path, video_path,results_path):
 
-    plot_frames_path = os.path.join(results_path, '/plot_frames/')
-    video_frames_path = os.path.join(results_path, '/video_frames/')
+    plot_frames_path = os.path.join(results_path, 'plot_frames/')
+    video_frames_path = os.path.join(results_path, 'video_frames/')
 
-    # If folder  doesn't exist -> create it
+    print(plot_frames_path)
+
+    # If folder doesn't exist -> create it
     if not os.path.exists(plot_frames_path):
         os.makedirs(plot_frames_path)
 
@@ -37,20 +43,6 @@ def task2(gt_path, det_path, video_path,results_path):
         'keep_ratio': True
     }
 
-    # to generate a BB randomly in an image, we use the mean width and
-    # height of the annotated BBs so that they have similar statistics
-    if noise_params['generate_random'] > 0.0:
-        mean_w = 0
-        mean_h = 0
-        for b in gt:
-            mean_w += b.width
-            mean_h += b.height
-        mean_w /= len(gt)
-        mean_h /= len(gt)
-
-    # if we want to replicate results
-    # np.random.seed(10)
-
     if noise_params['add']:
         noisy_gt = add_noise(gt, noise_params)
         grouped_noisy_gt = group_by_frame(noisy_gt)
@@ -59,13 +51,9 @@ def task2(gt_path, det_path, video_path,results_path):
     # cap.set(cv2.CAP_PROP_POS_FRAMES, frame_id)  # to start from frame #frame_id
     num_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-
-
-    frame_list = []
-    iou_plots = []
     iou_list = {}
 
-    for frame_id in range(num_frames):
+    for frame_id in range(10):
         _, frame = cap.read()
 
         frame = draw_boxes(frame, frame_id, grouped_gt[frame_id], color='g')
@@ -82,9 +70,6 @@ def task2(gt_path, det_path, video_path,results_path):
 
 
         plot = plot_iou(iou_list,num_frames)
-        plot_image = plot_to_image(plot)
-
-
 
         '''
         if show:
@@ -97,8 +82,8 @@ def task2(gt_path, det_path, video_path,results_path):
         plot.savefig(plot_frames_path+'iou_{}.png'.format(frame_id))
         plt.close(plot)
 
-
         frame_id += 1
+
     save_gif(plot_frames_path,results_path+'iou.gif')
     save_gif(video_frames_path,results_path+'bbox.gif')
     #cv2.destroyAllWindows()
@@ -106,12 +91,12 @@ def task2(gt_path, det_path, video_path,results_path):
     return
 
 
-def save_gif(source_path,results_path):
+def save_gif(source_path, results_path):
     # Build GIF
 
     with imageio.get_writer(results_path, mode='I') as writer:
         for filename in sorted(os.listdir(source_path)):
-            image = imageio.imread(filename)
+            image = imageio.imread(source_path+filename)
             writer.append_data(image)
 
 
@@ -148,18 +133,14 @@ def mean_iou(det,gt,sort=False):
     
     
     nd = len(BB)
-    tp = np.zeros(nd)
-    fp = np.zeros(nd)
     mean_iou=[]
     for d in range(nd):
         bb = BB[d, :].astype(float)
-        ovmax = -np.inf
-    
+
         if BBGT.size > 0:
             # compute overlaps
             overlaps = voc_iou(BBGT, bb)
             ovmax = np.max(overlaps)
-            jmax = np.argmax(overlaps)
             mean_iou.append(ovmax)
 
     return np.mean(mean_iou)
@@ -175,7 +156,8 @@ def sort_by_confidence(det):
 
 if __name__ == '__main__':
 
-    gt_path = '/Data/ai_challenge_s03_c010-full_annotation.xml'
-    det_path = '/Data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt'
+    gt_path = '../../data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml'
+    det_path = '../../data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt'
+    video_path = '../../data/AICity_data/train/S03/c010/vdo.avi'
 
-    
+    task2(gt_path, det_path, video_path=video_path, results_path='../results')
