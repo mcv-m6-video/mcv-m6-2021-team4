@@ -1,88 +1,39 @@
 import cv2
-import numpy as np
-from bounding_box import BoundingBox
 from aicity_reader import read_annotations, read_detections, group_by_frame
 from noise_generator import add_noise
 from voc_evaluation import voc_eval
 from utils import draw_boxes
 
-img_shape = [1080, 1920]
 
+def task1_1(paths, show, noise_params):
 
-def task1_1(gt_path, det_path):
-    video_path = '../../data/AICity_data/train/S03/c010/vdo.avi'
-
-    show_gt = True
-    show_det = False
-    show_noisy = True
-
-    noise_params = {
-        'add': True,
-        'drop': 0.0,
-        'generate_close': 0.0,
-        'generate_random': 0.0,
-        'type': 'specific',  # options: 'specific', 'gaussian', None
-        'std': 40,  # pixels
-        'position': False,
-        'size': True,
-        'keep_ratio': True
-    }
-
-    gt = read_annotations(gt_path)
-    det = read_detections(det_path)
+    gt = read_annotations(paths['gt'])
+    det = read_detections(paths['det'])
 
     grouped_gt = group_by_frame(gt)
     grouped_det = group_by_frame(det)
 
-    # to generate a BB randomly in an image, we use the mean width and
-    # height of the annotated BBs so that they have similar statistics
-    if noise_params['generate_random'] > 0.0:
-        mean_w = 0
-        mean_h = 0
-        for b in gt:
-            mean_w += b.width
-            mean_h += b.height
-        mean_w /= len(gt)
-        mean_h /= len(gt)
-
     # if we want to replicate results
     # np.random.seed(10)
 
-    if noise_params['add']:
-        noisy_gt = add_noise(gt, noise_params)
-        grouped_noisy_gt = group_by_frame(noisy_gt)
-
-    cap = cv2.VideoCapture(video_path)
+    cap = cv2.VideoCapture(paths['video'])
     # cap.set(cv2.CAP_PROP_POS_FRAMES, frame_id)  # to start from frame #frame_id
     num_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    if noise_params['add']:
+        noisy_gt = add_noise(gt, noise_params, num_frames)
+        grouped_noisy_gt = group_by_frame(noisy_gt)
 
     for frame_id in range(num_frames):
         _, frame = cap.read()
 
-        # generate a random BB in this frame
-        if noise_params['add'] and np.random.random() <= noise_params['generate_random']:
-            # center of the BB (cx, cy), width and height (w, h)
-            cx = np.random.randint(mean_w//2, img_shape[1]-mean_w//2)
-            cy = np.random.randint(mean_h//2, img_shape[0]-mean_h//2)
-            w = np.random.normal(mean_w, 20)
-            h = np.random.normal(mean_h, 20)
-            noisy_gt.append(BoundingBox(
-                id=-1,
-                label='car',
-                frame=frame_id,
-                xtl=cx - w/2,
-                ytl=cy - h/2,
-                xbr=cx + w/2,
-                ybr=cy + h/2
-            ))
-
-        if show_gt:
+        if show['gt']:
             frame = draw_boxes(frame, frame_id, grouped_gt[frame_id], color='g')
 
-        if show_det:
+        if show['det']:
             frame = draw_boxes(frame, frame_id, grouped_det[frame_id], color='b', det=True)
 
-        if show_noisy:
+        if show['noisy']:
             frame = draw_boxes(frame, frame_id, grouped_noisy_gt[frame_id], color='r')
 
         cv2.imshow('frame', frame)
@@ -96,9 +47,9 @@ def task1_1(gt_path, det_path):
     return
 
 
-def task1_2(gt_path, det_path, ap=0.5):
-    gt = read_annotations(gt_path)
-    det = read_detections(det_path)
+def task1_2(paths, ap=0.5):
+    gt = read_annotations(paths['gt'])
+    det = read_detections(paths['det'])
 
     grouped_gt = group_by_frame(gt)
 
@@ -109,8 +60,29 @@ def task1_2(gt_path, det_path, ap=0.5):
 
 
 if __name__ == '__main__':
-    gt_path = '../../data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml'
-    det_path = '../../data/AICity_data/train/S03/c010/det/det_yolo3.txt'
+    paths = {
+        'gt': '../../data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml',
+        'det': '../../data/AICity_data/train/S03/c010/det/det_yolo3.txt',
+        'video': '../../data/AICity_data/train/S03/c010/vdo.avi'
+    }
 
-    task1_1(gt_path, det_path)
-    task1_2(gt_path, det_path, ap=0.5)
+    show = {
+        'gt': True,
+        'det': False,
+        'noisy': True
+    }
+
+    noise_params = {
+        'add': True,
+        'drop': 0.2,
+        'generate_close': 0.2,
+        'generate_random': 0.3,
+        'type': 'specific',  # options: 'specific', 'gaussian', None
+        'std': 40,  # pixels
+        'position': False,
+        'size': True,
+        'keep_ratio': True
+    }
+
+    task1_1(paths, show, noise_params)
+    task1_2(paths, ap=0.5)
