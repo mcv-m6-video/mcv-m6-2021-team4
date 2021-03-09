@@ -1,14 +1,15 @@
-import logging
 import numpy as np
-import os
+from aicity_reader import read_annotations, read_detections, group_by_frame
 
 '''
-ADAPTED CODE FROM
+CODE ADAPTED FROM
 https://github.com/facebookresearch/detectron2/blob/master/detectron2/evaluation/pascal_voc_evaluation.py
 '''
+
+
 def voc_ap(rec, prec):
-    """Compute VOC AP given precision and recall, using (always)
-    the 11-point method .
+    """Compute VOC AP given precision and recall,
+    using the 11-point method .
     """
     # 11 point metric
     ap = 0.0
@@ -20,8 +21,6 @@ def voc_ap(rec, prec):
         ap = ap + p / 11.0
     
     return ap
-
-
 
 
 def voc_iou(BBGT,bb):
@@ -45,14 +44,8 @@ def voc_iou(BBGT,bb):
     overlaps = inters/uni
     return overlaps
 
-def mean_iou(BBGT, bb):
-    BBGT = np.array(BBGT).reshape(-1, 4)
-    bb = np.array(bb).reshape(-1, 4)
-    overlaps = voc_iou(BBGT, bb)
-    
-    return np.mean(np.max(overlaps, axis=1))
 
-def voc_eval(detections, annotations, ovthresh=0.5,is_confidence=True):
+def voc_eval(detections, annotations, ovthresh=0.5, is_confidence=True):
     """rec, prec, ap = voc_eval(detections,
                                 annotations
                                 ovthresh)
@@ -62,16 +55,14 @@ def voc_eval(detections, annotations, ovthresh=0.5,is_confidence=True):
     ovthresh: Overlap threshold (default = 0.5)
      """
     # read annotations
-    class_recs = []
+    class_recs = {}
     npos = 0
 
     for frame_id, boxes in annotations.items():
         bbox = np.array([det.box for det in boxes])
         det = [False] * len(boxes)
         npos += len(boxes)
-        class_recs.append({"bbox": bbox, "det": det}) 
-
-   
+        class_recs[frame_id] = {"bbox": bbox, "det": det}
  
     # read detections
     image_ids = [x.frame for x in detections]
@@ -119,48 +110,3 @@ def voc_eval(detections, annotations, ovthresh=0.5,is_confidence=True):
     ap = voc_ap(rec, prec)
 
     return rec, prec, ap
-
-  
-  
-def map(annotations, detections):
-    """
-    Mean Average Precision.
-    annotations (Grouped by Frame)
-    detections 
-
-    """
-	ap, prec, rec = average_precision(annotations, detections)
-
-    prec = np.mean(prec)
-    rec = np.mean(rec)
-    map = np.mean(ap)
-
-    return map, prec, rec  
-  
-
-  
-# To move to a utils or similar
-def group_by_frame(detections):
-    grouped = defaultdict(list)
-    for det in detections:
-        grouped[det.frame].append(det)
-    return OrderedDict(sorted(grouped.items()))    
-  
-'''
-###Demo
-from collections import defaultdict, OrderedDict
-
-
-annotations_path = 'Data/ai_challenge_s03_c010-full_annotation.xml'
-detections_path = 'Data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt'
-
-annotations = read_annotations(annotations_path)
-detections = read_detections(detections_path)
-
-annotations_grouped = group_by_frame(annotations)
-
-rec, prec, ap = voc_eval(detections,annotations_grouped,0.5,is_confidence=True)
-print(ap)
-
-
-'''

@@ -1,279 +1,72 @@
-import xmltodict
 import cv2
 import numpy as np
-from copy import deepcopy
-from collections import defaultdict, OrderedDict
+from bounding_box import BoundingBox
+from aicity_reader import read_annotations, read_detections, group_by_frame
+from noise_generator import add_noise
+from voc_evaluation import voc_eval
+from utils import draw_boxes
 
 img_shape = [1080, 1920]
 
-colors = {
-    'r': (0, 0, 255),
-    'g': (0, 255, 0),
-    'b': (255, 0, 0)
-}
 
-
-# import ffmpeg
-# (
-#     ffmpeg
-#         .input('./data/AICity_data/train/S03/c010/vdo.avi')
-#         .filter('fps', fps=1)
-#         .output('test/%d.png',
-#                 start_number=0)
-#         .run(capture_stdout=True, capture_stderr=True)
-#  )
-
-
-class BoundingBox:
-
-    def __init__(self, id, label, frame, xtl, ytl, xbr, ybr, occluded=None, parked=None, confidence=None):
-        self.id = id
-        self.label = label
-        self.frame = frame
-        self.xtl = xtl
-        self.ytl = ytl
-        self.xbr = xbr
-        self.ybr = ybr
-        self.occluded = occluded
-        self.parked = parked
-        self.confidence = confidence
-
-    @property
-    def box(self):
-        return [self.xtl, self.ytl, self.xbr, self.ybr]
-
-    @property
-    def center(self):
-        return [(self.xtl + self.xbr) // 2, (self.ytl + self.ybr) // 2]
-
-    @property
-    def width(self):
-        return abs(self.xbr - self.xtl)
-
-    @property
-    def height(self):
-        return abs(self.ybr - self.ytl)
-
-    def area(self):
-        return self.width * self.height
-
-    def shift_position(self, center):
-        self.xtl = center[0] - self.width/2
-        self.ytl = center[1] - self.height/2
-        self.xbr = center[0] + self.width/2
-        self.ybr = center[1] + self.height/2
-        return
-
-    def resize(self, size):
-        h, w = size
-        c = self.center
-        self.xtl = c[0] - w/2
-        self.ytl = c[1] - h/2
-        self.xbr = c[0] + w/2
-        self.ybr = c[1] + h/2
-        return
-
-    # tmp name
-    def inside_image(self):
-        h, w = img_shape
-
-        if self.xtl < 0:
-            self.xtl = 0
-
-        if self.ytl < 0:
-            self.ytl = 0
-
-        if self.xbr >= w:
-            self.xbr = w - 1
-
-        if self.ybr >= h:
-            self.ybr = h - 1
-
-        return
-
-
-def read_annotations(path):
-    with open(path) as f:
-        tracks = xmltodict.parse(f.read())['annotations']['track']
-
-    annotations = []
-    for track in tracks:
-        id = track['@id']
-        label = track['@label']
-
-        if label != 'car':
-            continue
-
-        for box in track['box']:
-            annotations.append(BoundingBox(
-                id=int(id),
-                label=label,
-                frame=int(box['@frame']),
-                xtl=float(box['@xtl']),
-                ytl=float(box['@ytl']),
-                xbr=float(box['@xbr']),
-                ybr=float(box['@ybr']),
-                occluded=box['@occluded'] == '1',
-                parked=box['attribute']['#text'] == 'true'
-            ))
-
-    return annotations
-
-
-def read_detections(path):
-    """
-    Format: <frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z>
-    """
-
-    with open(path) as f:
-        lines = f.readlines()
-
-    detections = []
-    for line in lines:
-        det = line.split(sep=',')
-        detections.append(BoundingBox(
-            id=int(det[1]),
-            label='car',
-            frame=int(det[0]) - 1,
-            xtl=float(det[2]),
-            ytl=float(det[3]),
-            xbr=float(det[2]) + float(det[4]),
-            ybr=float(det[3]) + float(det[5]),
-            confidence=float(det[6])
-        ))
-
-    return detections
-
-
-def group_by_frame(boxes):
-    grouped = defaultdict(list)
-    for box in boxes:
-        grouped[box.frame].append(box)
-    return OrderedDict(sorted(grouped.items()))
-
-
-def draw_boxes(image, frame_id, boxes, color='g', det=False):
-    rgb = colors[color]
-    for box in boxes:
-        if box.frame == frame_id:
-            image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), rgb, 2)
-            if det:
-                cv2.putText(image, str(box.confidence), (int(box.xtl), int(box.ytl) - 5), cv2.FONT_ITALIC, 0.6, rgb, 2)
-    return image
-
-
-def add_specific_noise(box, noise_params):
-    if noise_params['position']:
-        noisy_center = box.center + np.random.normal(0, noise_params['std'], 2)
-        box.shift_position(noisy_center)
-
-    if noise_params['size']:
-        if noise_params['keep_ratio']:
-            size_noise = np.random.normal(0, noise_params['std'], 1)
-            h = box.height + size_noise[0]
-        else:
-            size_noise = np.random.normal(0, noise_params['std'], 2)
-            h = box.height + size_noise[1]
-
-        w = box.width + size_noise[0]
-        box.resize([h, w])
-
-    return
-
-
-def add_gaussian_noise(box, noise_params):
-    noisy_coords = np.random.normal(0, noise_params['std'], 4)
-    box.xtl = box.xtl + noisy_coords[0]
-    box.ytl = box.ytl + noisy_coords[1]
-    box.xbr = box.xbr + noisy_coords[2]
-    box.ybr = box.ybr + noisy_coords[3]
-
-    return
-
-
-def add_noise(annotations, noise_params):
-    noisy_annotations = []
-    for box in annotations:
-
-        # remove box
-        if np.random.random() <= noise_params['drop']:
-            continue
-
-        # generate box
-        if np.random.random() <= noise_params['generate']:
-            new_box = deepcopy(box)
-            noise['gaussian'](new_box, noise_params)
-            noisy_annotations.append(new_box)
-
-        b = deepcopy(box)
-        # add noise to existing box
-        if noise_params['type'] is not None:
-            noise[noise_params['type']](b, noise_params)
-
-        noisy_annotations.append(b)
-
-    return noisy_annotations
-
-
-noise = {
-    'gaussian': add_gaussian_noise,
-    'specific': add_specific_noise
-}
-
-if __name__ == '__main__':
-    annotations_path = '../../data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml'
-    detections_path = '../../data/AICity_data/train/S03/c010/det/det_yolo3.txt'
+def task1_1(gt_path, det_path):
     video_path = '../../data/AICity_data/train/S03/c010/vdo.avi'
 
-    show_annotations = True
-    show_detections = False
+    show_gt = True
+    show_det = False
     show_noisy = True
 
     noise_params = {
-        'add': True,  # tmp name
+        'add': True,
         'drop': 0.0,
-        'generate': 0.0,
-        'type': 'specific',
-        'std': 40,
+        'generate_close': 0.0,
+        'generate_random': 0.0,
+        'type': 'specific',  # options: 'specific', 'gaussian', None
+        'std': 40,  # pixels
         'position': False,
         'size': True,
         'keep_ratio': True
     }
 
-    annotations = read_annotations(annotations_path)
-    detections = read_detections(detections_path)
+    gt = read_annotations(gt_path)
+    det = read_detections(det_path)
 
-    grouped = group_by_frame(annotations)
+    grouped_gt = group_by_frame(gt)
+    grouped_det = group_by_frame(det)
 
-    mean_w = 0
-    mean_h = 0
-    for b in annotations:
-        mean_w += b.width
-        mean_h += b.height
-    mean_w /= len(annotations)
-    mean_h /= len(annotations)
+    # to generate a BB randomly in an image, we use the mean width and
+    # height of the annotated BBs so that they have similar statistics
+    if noise_params['generate_random'] > 0.0:
+        mean_w = 0
+        mean_h = 0
+        for b in gt:
+            mean_w += b.width
+            mean_h += b.height
+        mean_w /= len(gt)
+        mean_h /= len(gt)
 
+    # if we want to replicate results
     # np.random.seed(10)
 
     if noise_params['add']:
-        noisy_annotations = add_noise(annotations, noise_params)
+        noisy_gt = add_noise(gt, noise_params)
+        grouped_noisy_gt = group_by_frame(noisy_gt)
 
     cap = cv2.VideoCapture(video_path)
-    frame_id = 0
-    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_id)  # to start from frame #frame_id
-
+    # cap.set(cv2.CAP_PROP_POS_FRAMES, frame_id)  # to start from frame #frame_id
     num_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    prob_generate = 0.3
 
-    while True:
+    for frame_id in range(num_frames):
         _, frame = cap.read()
 
-        if noise_params['add'] and np.random.random() <= prob_generate:
-            cx = np.random.randint(0, img_shape[1])
-            cy = np.random.randint(0, img_shape[0])
+        # generate a random BB in this frame
+        if noise_params['add'] and np.random.random() <= noise_params['generate_random']:
+            # center of the BB (cx, cy), width and height (w, h)
+            cx = np.random.randint(mean_w//2, img_shape[1]-mean_w//2)
+            cy = np.random.randint(mean_h//2, img_shape[0]-mean_h//2)
             w = np.random.normal(mean_w, 20)
             h = np.random.normal(mean_h, 20)
-            noisy_annotations.append(BoundingBox(
+            noisy_gt.append(BoundingBox(
                 id=-1,
                 label='car',
                 frame=frame_id,
@@ -283,17 +76,41 @@ if __name__ == '__main__':
                 ybr=cy + h/2
             ))
 
-        if show_annotations:
-            frame = draw_boxes(frame, frame_id, annotations, color='g')
+        if show_gt:
+            frame = draw_boxes(frame, frame_id, grouped_gt[frame_id], color='g')
 
-        if show_detections:
-            frame = draw_boxes(frame, frame_id, detections, color='b', det=True)
+        if show_det:
+            frame = draw_boxes(frame, frame_id, grouped_det[frame_id], color='b', det=True)
 
         if show_noisy:
-            frame = draw_boxes(frame, frame_id, noisy_annotations, color='r')
+            frame = draw_boxes(frame, frame_id, grouped_noisy_gt[frame_id], color='r')
 
         cv2.imshow('frame', frame)
         if cv2.waitKey() == 113:  # press q to quit
             break
 
         frame_id += 1
+
+    cv2.destroyAllWindows()
+
+    return
+
+
+def task1_2(gt_path, det_path, ap=0.5):
+    gt = read_annotations(gt_path)
+    det = read_detections(det_path)
+
+    grouped_gt = group_by_frame(gt)
+
+    rec, prec, ap = voc_eval(det, grouped_gt, ap, is_confidence=True)
+    print(ap)
+
+    return
+
+
+if __name__ == '__main__':
+    gt_path = '../../data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml'
+    det_path = '../../data/AICity_data/train/S03/c010/det/det_yolo3.txt'
+
+    task1_1(gt_path, det_path)
+    task1_2(gt_path, det_path, ap=0.5)
