@@ -102,33 +102,23 @@ def plot_iou(dict_iou):
     plt.show()
 
 
-def sort_by_confidence(det):
-    BB = np.array([x.box for x in det]).reshape(-1, 4)
-    confidence = np.array([float(x.confidence) for x in det])
-    sorted_ind = np.argsort(-confidence)
-    BB = BB[sorted_ind, :]
-
-    return BB
-
-
 # IAN: S'HA CANVIAT L'ORDRE!!!!
 def iou_frame(gt, det, sort=False):
     """
     det: detections of one frame
     gt: annotations of one frame
-    sort: False if we use modified GT, 
+    sort: False if we use modified GT,
           True if we have a confidence value for the detection
     """
     if sort:
         BB = sort_by_confidence(det)
     else:
-        BB = np.array([x.box for x in det]).reshape(-1, 4)    
+        BB = np.array([x.box for x in det]).reshape(-1, 4)
 
     BBGT = np.array([anot.box for anot in gt])
-    
-    
+
     nd = len(BB)
-    iou_boxes=[]
+    iou_boxes = []
     for d in range(nd):
         bb = BB[d, :].astype(float)
 
@@ -152,6 +142,16 @@ def mean_iou(gt, det, detections=False):
     return acc_iou / total_boxes
 
 
+# a on fiquem això?
+def sort_by_confidence(det):
+    BB = np.array([x.box for x in det]).reshape(-1, 4)
+    confidence = np.array([float(x.confidence) for x in det])
+    sorted_ind = np.argsort(-confidence)
+    BB = BB[sorted_ind, :]
+
+    return BB
+
+
 if __name__ == '__main__':
 
     gt_path = '../../data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml'
@@ -163,6 +163,25 @@ if __name__ == '__main__':
     gt_grouped = group_by_frame(gt)
     det_grouped = group_by_frame(det)
 
-    mean_iou = mean_iou(gt_grouped, det_grouped, detections=True)
+    noise_params = {
+        'add': True,
+        'drop': 0.4,
+        'generate_close': 0.0,
+        'generate_random': 0.0,
+        'type': 'specific',  # options: 'specific', 'gaussian', None
+        'std': 40,  # pixels
+        'position': False,
+        'size': True,
+        'keep_ratio': True
+    }
+
+    cap = cv2.VideoCapture('../../data/AICity_data/train/S03/c010/vdo.avi')
+    # cap.set(cv2.CAP_PROP_POS_FRAMES, frame_id)  # to start from frame #frame_id
+    num_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    noisy_gt = add_noise(gt, noise_params, num_frames)
+    grouped_noisy_gt = group_by_frame(noisy_gt)
+
+    mean_iou = mean_iou(gt_grouped, grouped_noisy_gt, detections=False)
     print(mean_iou)
 
