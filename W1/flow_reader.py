@@ -15,7 +15,7 @@ def read_flow(flow_file):
     im_u = (im[:, :, 2] - 2 ** 15) / 64
     im_v = (im[:, :, 1] - 2 ** 15) / 64
 
-    im_exists = im[:, :, 0]
+    im_exists = im[:, :, 0] #denotes if a valid ground truth optical flow value exists for that pixel (1 if true, 0 otherwise)
     im_exists[im_exists > 1] = 1
 
     im_u[im_exists == 0] = 0
