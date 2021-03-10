@@ -1,2 +1,5 @@
 .vscode/*
 .idea/*
+__pycache__/
+results/plot_frames/*
+results/video_frames/*
