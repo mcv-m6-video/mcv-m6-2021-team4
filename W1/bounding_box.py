@@ -35,10 +35,12 @@ class BoundingBox:
         return self.width * self.height
 
     def shift_position(self, center):
-        self.xtl = center[0] - self.width/2
-        self.ytl = center[1] - self.height/2
-        self.xbr = center[0] + self.width/2
-        self.ybr = center[1] + self.height/2
+        w = self.width
+        h = self.height
+        self.xtl = center[0] - w/2
+        self.ytl = center[1] - h/2
+        self.xbr = center[0] + w/2
+        self.ybr = center[1] + h/2
         return
 
     def resize(self, size):
