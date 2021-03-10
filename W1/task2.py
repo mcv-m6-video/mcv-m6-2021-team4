@@ -1,53 +1,163 @@
+import cv2
+import matplotlib.pyplot as plt
+from noise_generator import add_noise
+from utils import draw_boxes
 import numpy as np
 from aicity_reader import read_annotations, read_detections, group_by_frame
 from voc_evaluation import voc_iou
+import imageio
+import os
 
-if __name__ == '__main__':
+def task2(gt_path, det_path, video_path,results_path):
 
-    gt_path = '/Data/ai_challenge_s03_c010-full_annotation.xml'
-    det_path = '/Data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt'
+    plot_frames_path = os.path.join(results_path, 'plot_frames/')
+    video_frames_path = os.path.join(results_path, 'video_frames/')
+
+    print(plot_frames_path)
+
+    # If folder doesn't exist -> create it
+    if not os.path.exists(plot_frames_path):
+        os.makedirs(plot_frames_path)
+
+    if not os.path.exists(video_frames_path):
+        os.makedirs(video_frames_path)
+
+    show_det = True
+    show_noisy = False
 
     gt = read_annotations(gt_path)
     det = read_detections(det_path)
 
-    annotations_grouped = group_by_frame(gt)
+    grouped_gt = group_by_frame(gt)
+    grouped_det = group_by_frame(det)
 
-    # read annotations
-    class_recs = []
-    npos = 0
+    noise_params = {
+        'add': False,
+        'drop': 0.0,
+        'generate_close': 0.0,
+        'generate_random': 0.0,
+        'type': 'specific',  # options: 'specific', 'gaussian', None
+        'std': 40,  # pixels
+        'position': False,
+        'size': True,
+        'keep_ratio': True
+    }
 
-    for frame_id, boxes in annotations_grouped.items():
-        bbox = np.array([det.box for det in boxes])
-        detection = [False] * len(boxes)
-        npos += len(boxes)
-        class_recs.append({"bbox": bbox, "det": detection})
+    if noise_params['add']:
+        noisy_gt = add_noise(gt, noise_params)
+        grouped_noisy_gt = group_by_frame(noisy_gt)
 
-    # read detections
-    image_ids = [x.frame for x in det]
-    BB = np.array([x.box for x in det]).reshape(-1, 4)
+    cap = cv2.VideoCapture(video_path)
+    # cap.set(cv2.CAP_PROP_POS_FRAMES, frame_id)  # to start from frame #frame_id
+    num_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    confidence = np.array([float(x.confidence) for x in det])
-    # sort by confidence
-    sorted_ind = np.argsort(-confidence)
-    BB = BB[sorted_ind, :]
-    image_ids = [image_ids[x] for x in sorted_ind]
+    iou_list = {}
 
-    # go down detections (dets) and mark TPs and FPs
-    nd = len(image_ids)
-    tp = np.zeros(nd)
-    fp = np.zeros(nd)
+    for frame_id in range(10):
+        _, frame = cap.read()
 
-    mean_iou = []
+        frame = draw_boxes(frame, frame_id, grouped_gt[frame_id], color='g')
+
+        if show_det:
+            frame = draw_boxes(frame, frame_id, grouped_det[frame_id], color='b', det=True)
+            frame_iou = mean_iou(grouped_det[frame_id],grouped_gt[frame_id],sort=True)
+
+        if show_noisy:
+            frame = draw_boxes(frame, frame_id, grouped_noisy_gt[frame_id], color='r')
+            frame_iou = mean_iou(grouped_noisy_gt[frame_id],grouped_gt[frame_id])
+
+        iou_list[frame_id] = frame_iou
+
+
+        plot = plot_iou(iou_list,num_frames)
+
+        '''
+        if show:
+            fig.show()
+            cv2.imshow('frame', frame)
+            if cv2.waitKey() == 113:  # press q to quit
+                break
+        '''
+        imageio.imwrite(video_frames_path+'{}.png'.format(frame_id), frame)
+        plot.savefig(plot_frames_path+'iou_{}.png'.format(frame_id))
+        plt.close(plot)
+
+        frame_id += 1
+
+    save_gif(plot_frames_path,results_path+'iou.gif')
+    save_gif(video_frames_path,results_path+'bbox.gif')
+    #cv2.destroyAllWindows()
+
+    return
+
+
+def save_gif(source_path, results_path):
+    # Build GIF
+
+    with imageio.get_writer(results_path, mode='I') as writer:
+        for filename in sorted(os.listdir(source_path)):
+            image = imageio.imread(source_path+filename)
+            writer.append_data(image)
+
+
+def plot_iou(dict_iou,xmax):
+    lists = sorted(dict_iou.items()) # sorted by key, return a list of tuples
+
+    x, y = zip(*lists) # unpack a list of pairs into two tuples
+    
+    fig, ax = plt.subplots(figsize=(10,5))
+    ax.plot(x, y)
+    ax.grid()
+    ax.set(xlabel='frame', ylabel='IoU',
+           title='IoU vs Time')
+
+    # Used to keep the limits constant
+    ax.set_ylim(0,1)
+    ax.set_xlim(0,xmax)
+
+    return fig
+
+def mean_iou(det,gt,sort=False):
+    '''
+    det: detections of one frame
+    gt: annotations of one frame
+    sort: False if we use modified GT, 
+          True if we have a confidence value for the detection
+    '''
+    if sort:
+        BB = sort_by_confidence(det)
+    else:
+        BB = np.array([x.box for x in det]).reshape(-1, 4)    
+
+    BBGT = np.array([anot.box for anot in gt])
+    
+    
+    nd = len(BB)
+    mean_iou=[]
     for d in range(nd):
-        R = class_recs[image_ids[d]]
         bb = BB[d, :].astype(float)
-        ovmax = -np.inf
-        BBGT = R["bbox"].astype(float)
 
         if BBGT.size > 0:
             # compute overlaps
             overlaps = voc_iou(BBGT, bb)
             ovmax = np.max(overlaps)
-            jmax = np.argmax(overlaps)
-            iou = np.mean(np.max(overlaps))
-            mean_iou.append(iou)
+            mean_iou.append(ovmax)
+
+    return np.mean(mean_iou)
+
+
+def sort_by_confidence(det):
+    BB = np.array([x.box for x in det]).reshape(-1, 4)
+    confidence = np.array([float(x.confidence) for x in det])
+    sorted_ind = np.argsort(-confidence)
+    BB = BB[sorted_ind, :]
+
+    return BB
+
+if __name__ == '__main__':
+
+    gt_path = '../../data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml'
+    det_path = '../../data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt'
+    video_path = '../../data/AICity_data/train/S03/c010/vdo.avi'
+
+    task2(gt_path, det_path, video_path=video_path, results_path='../results')
