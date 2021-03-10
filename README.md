@@ -3,7 +3,7 @@
 ## Contributors 
 - [Pol Albacar](https://github.com/polalbacar) - @gmail.com
 - [Òscar Lorente](https://github.com/oscar-lorente) - oscar.lorente.co@gmail.com
-- [Eduard Mainou](https://github.com/EddieMG) - @gmail.com
+- [Eduard Mainou](https://github.com/EddieMG) - eduardmgobierno@gmail.com
 - [Ian Riera Smolinska](https://github.com/ianriera) - ian.riera.smolinska@gmail.com
 
 ## Summary
