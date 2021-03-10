@@ -8,11 +8,12 @@ from flow_reader import read_flow
 def option1():
 
     data_path = "../data/"
+
     gt_path = "../data/of_ground_truth"
     frames = ["000045_10.png", "000157_10.png"]
 
-    gt_path = "../data/of_estimations_LK"
-    frames = ["LKflow_000045_10.png", "LKflow_000157_10.png"]
+    # gt_path = "../data/of_estimations_LK"
+    # frames = ["LKflow_000045_10.png", "LKflow_000157_10.png"]
 
     for frame in frames:
 
@@ -42,11 +43,14 @@ def option1():
         # plt.savefig('task4'+frame)
 
 def option2():
+
     data_path = "../data/"
-    # gt_path = "../data/of_ground_truth"
-    # frames = ["000045_10.png", "000157_10.png"]
-    gt_path = "../data/of_estimations_LK"
-    frames = ["LKflow_000045_10.png", "LKflow_000157_10.png"]
+    
+    gt_path = "../data/of_ground_truth"
+    frames = ["000045_10.png", "000157_10.png"]
+
+    # gt_path = "../data/of_estimations_LK"
+    # frames = ["LKflow_000045_10.png", "LKflow_000157_10.png"]
 
     for frame in frames:
 
