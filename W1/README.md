@@ -24,3 +24,5 @@ optional arguments:
   --t3        execute task 3: compute MSEN, PEPN, and visualize the errors
   --t4        execute task 4: visualize optial flow (two methods)
 ```
+Note: Add AIcity folder into data/ to use it
+with annotations file 'ai_challenge_s03_c010_full_annotation.xml' in path 'AICity_data/train/S03/c010'
