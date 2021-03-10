@@ -1,7 +1,7 @@
 # Week 1
 
-* Task 1: Detection metrics.
-* Task 2: Detection metrics. Temporal analysis.
+* Task 1: Add noise to annotations. Understand detection metrics.
+* Task 2: Compute detection metrics vs frames (temporal analysis).
 * Task 3: Optical flow evaluation metrics.
 * Task 4: Visual representation optical flow.
 
