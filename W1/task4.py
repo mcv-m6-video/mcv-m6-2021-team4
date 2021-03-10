@@ -11,6 +11,9 @@ def option1():
     gt_path = "../data/of_ground_truth"
     frames = ["000045_10.png", "000157_10.png"]
 
+    gt_path = "../data/of_estimations_LK"
+    frames = ["LKflow_000045_10.png", "LKflow_000157_10.png"]
+
     for frame in frames:
 
         gt = read_flow(path.join(gt_path, frame))
@@ -28,10 +31,11 @@ def option1():
         plt.title("pivot='tip'; scales with x view")
         M = np.hypot(U, V)
         Q = plt.quiver(X[::5, ::5], Y[::5, ::5], U[::5, ::5], V[::5, ::5], M[::5, ::5],
-                       units='x', pivot='tail', width=0.9, scale=0.5)
+                       units='x', pivot='tail', width=0.9, scale=0.05)
         qk = plt.quiverkey(Q, 0.9, 0.9, 1, r'$1 \frac{m}{s}$',
                            labelpos='E', coordinates='data')
 
+        plt.colorbar()
         plt.imshow(grayImage, cmap='gray')
 
         plt.show()
@@ -39,8 +43,10 @@ def option1():
 
 def option2():
     data_path = "../data/"
-    gt_path = "../data/of_ground_truth"
-    frames = ["000045_10.png", "000157_10.png"]
+    # gt_path = "../data/of_ground_truth"
+    # frames = ["000045_10.png", "000157_10.png"]
+    gt_path = "../data/of_estimations_LK"
+    frames = ["LKflow_000045_10.png", "LKflow_000157_10.png"]
 
     for frame in frames:
 
@@ -78,10 +84,10 @@ def option2():
         plt.title("pivot='tip'; scales with x view")
         M = np.hypot(u_new, v_new)
         Q = plt.quiver(X[::5, ::5], Y[::5, ::5], u_new[::5, ::5], v_new[::5, ::5], M[::5, ::5],
-                        units='x', pivot='tail', width=3, scale=0.025)
+                        units='x', pivot='tail', width=3, scale=0.009)
         qk = plt.quiverkey(Q, 0.9, 0.9, 1, r'$1 \frac{m}{s}$',
                             labelpos='E', coordinates='data')
-
+        # plt.colorbar()
         plt.imshow(grayImage, cmap='gray')
         # plt.savefig('task4_opt2_'+frame)    
         plt.show()
@@ -92,4 +98,4 @@ def option2():
 
 if __name__ == '__main__':
     option1()
-    option2()
+    # option2()
