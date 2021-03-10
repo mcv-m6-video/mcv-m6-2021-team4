@@ -38,6 +38,7 @@ def option1():
         # plt.savefig('task4'+frame)
 
 def option2():
+
     data_path = "../data/"
     gt_path = "../data/of_ground_truth"
     frames = ["000045_10.png", "000157_10.png"]
@@ -85,11 +86,8 @@ def option2():
         plt.imshow(grayImage, cmap='gray')
         # plt.savefig('task4_opt2_'+frame)    
         plt.show()
-    
 
 
-
-
-if __name__ == '__main__':
+def run():
     option1()
     option2()

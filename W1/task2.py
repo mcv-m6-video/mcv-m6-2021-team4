@@ -8,8 +8,8 @@ from voc_evaluation import voc_iou
 import imageio
 import os
 
-def task2(gt_path, det_path, video_path,results_path):
 
+def task2(gt_path, det_path, video_path, results_path):
     plot_frames_path = os.path.join(results_path, 'plot_frames/')
     video_frames_path = os.path.join(results_path, 'video_frames/')
 
@@ -53,23 +53,22 @@ def task2(gt_path, det_path, video_path,results_path):
 
     iou_list = {}
 
-    for frame_id in range(10):
+    for frame_id in range(20):
         _, frame = cap.read()
 
         frame = draw_boxes(frame, frame_id, grouped_gt[frame_id], color='g')
 
         if show_det:
             frame = draw_boxes(frame, frame_id, grouped_det[frame_id], color='b', det=True)
-            frame_iou = mean_iou(grouped_det[frame_id],grouped_gt[frame_id],sort=True)
+            frame_iou = mean_iou(grouped_det[frame_id], grouped_gt[frame_id], sort=True)
 
         if show_noisy:
             frame = draw_boxes(frame, frame_id, grouped_noisy_gt[frame_id], color='r')
-            frame_iou = mean_iou(grouped_noisy_gt[frame_id],grouped_gt[frame_id])
+            frame_iou = mean_iou(grouped_noisy_gt[frame_id], grouped_gt[frame_id])
 
         iou_list[frame_id] = frame_iou
 
-
-        plot = plot_iou(iou_list,num_frames)
+        plot = plot_iou(iou_list, num_frames)
 
         '''
         if show:
@@ -78,15 +77,15 @@ def task2(gt_path, det_path, video_path,results_path):
             if cv2.waitKey() == 113:  # press q to quit
                 break
         '''
-        imageio.imwrite(video_frames_path+'{}.png'.format(frame_id), frame)
-        plot.savefig(plot_frames_path+'iou_{}.png'.format(frame_id))
+        imageio.imwrite(video_frames_path + '{}.png'.format(frame_id), frame)
+        plot.savefig(plot_frames_path + 'iou_{}.png'.format(frame_id))
         plt.close(plot)
 
         frame_id += 1
 
-    save_gif(plot_frames_path,results_path+'iou.gif')
-    save_gif(video_frames_path,results_path+'bbox.gif')
-    #cv2.destroyAllWindows()
+    save_gif(plot_frames_path, results_path + 'iou.gif')
+    save_gif(video_frames_path, results_path + 'bbox.gif')
+    # cv2.destroyAllWindows()
 
     return
 
@@ -96,44 +95,44 @@ def save_gif(source_path, results_path):
 
     with imageio.get_writer(results_path, mode='I') as writer:
         for filename in sorted(os.listdir(source_path)):
-            image = imageio.imread(source_path+filename)
+            image = imageio.imread(source_path + filename)
             writer.append_data(image)
 
 
-def plot_iou(dict_iou,xmax):
-    lists = sorted(dict_iou.items()) # sorted by key, return a list of tuples
+def plot_iou(dict_iou, xmax):
+    lists = sorted(dict_iou.items())  # sorted by key, return a list of tuples
 
-    x, y = zip(*lists) # unpack a list of pairs into two tuples
-    
-    fig, ax = plt.subplots(figsize=(10,5))
+    x, y = zip(*lists)  # unpack a list of pairs into two tuples
+
+    fig, ax = plt.subplots(figsize=(10, 5))
     ax.plot(x, y)
     ax.grid()
     ax.set(xlabel='frame', ylabel='IoU',
            title='IoU vs Time')
 
     # Used to keep the limits constant
-    ax.set_ylim(0,1)
-    ax.set_xlim(0,xmax)
+    ax.set_ylim(0, 1)
+    ax.set_xlim(0, xmax)
 
     return fig
 
-def mean_iou(det,gt,sort=False):
+
+def mean_iou(det, gt, sort=False):
     '''
     det: detections of one frame
     gt: annotations of one frame
-    sort: False if we use modified GT, 
+    sort: False if we use modified GT,
           True if we have a confidence value for the detection
     '''
     if sort:
         BB = sort_by_confidence(det)
     else:
-        BB = np.array([x.box for x in det]).reshape(-1, 4)    
+        BB = np.array([x.box for x in det]).reshape(-1, 4)
 
     BBGT = np.array([anot.box for anot in gt])
-    
-    
+
     nd = len(BB)
-    mean_iou=[]
+    mean_iou = []
     for d in range(nd):
         bb = BB[d, :].astype(float)
 
@@ -154,10 +153,10 @@ def sort_by_confidence(det):
 
     return BB
 
-if __name__ == '__main__':
 
-    gt_path = '../../data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml'
-    det_path = '../../data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt'
-    video_path = '../../data/AICity_data/train/S03/c010/vdo.avi'
+def run():
+    gt_path = '../data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml'
+    det_path = '../data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt'
+    video_path = '../data/AICity_data/train/S03/c010/vdo.avi'
 
     task2(gt_path, det_path, video_path=video_path, results_path='../results')

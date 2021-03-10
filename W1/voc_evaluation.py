@@ -8,7 +8,8 @@ https://github.com/facebookresearch/detectron2/blob/master/detectron2/evaluation
 
 
 def voc_ap(rec, prec):
-    """Compute VOC AP given precision and recall,
+    """
+    Compute VOC AP given precision and recall,
     using the 11-point method .
     """
     # 11 point metric
@@ -24,10 +25,10 @@ def voc_ap(rec, prec):
 
 
 def voc_iou(BBGT,bb):
-    '''
+    """
     Compute IoU between groundtruth bounding box = BBGT
     and detected bounding box = bb
-    '''
+    """
     # intersection
     ixmin = np.maximum(BBGT[:, 0], bb[0])
     iymin = np.maximum(BBGT[:, 1], bb[1])
@@ -46,14 +47,15 @@ def voc_iou(BBGT,bb):
 
 
 def voc_eval(detections, annotations, ovthresh=0.5, is_confidence=True):
-    """rec, prec, ap = voc_eval(detections,
+    """
+    rec, prec, ap = voc_eval(detections,
                                 annotations
                                 ovthresh)
     Top level function that does the PASCAL VOC -like evaluation.
     Detections
     Annotations: GROUPED BY FRAME
     ovthresh: Overlap threshold (default = 0.5)
-     """
+    """
     # read annotations
     class_recs = {}
     npos = 0
