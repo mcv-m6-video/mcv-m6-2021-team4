@@ -1,7 +1,7 @@
 # mcv-m6-2021-team4
 ## Team 4
 ## Contributors 
-- [Pol Albacar](https://github.com/polalbacar) - @gmail.com
+- [Pol Albacar](https://github.com/polalbacar) - palbacarfernandez@gmail.com
 - [Òscar Lorente](https://github.com/oscar-lorente) - oscar.lorente.co@gmail.com
 - [Eduard Mainou](https://github.com/EddieMG) - eduardmgobierno@gmail.com
 - [Ian Riera Smolinska](https://github.com/ianriera) - ian.riera.smolinska@gmail.com
