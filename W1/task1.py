@@ -59,11 +59,11 @@ def task1_2(paths, ap=0.5):
     return
 
 
-if __name__ == '__main__':
+def run():
     paths = {
-        'gt': '../../data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml',
-        'det': '../../data/AICity_data/train/S03/c010/det/det_yolo3.txt',
-        'video': '../../data/AICity_data/train/S03/c010/vdo.avi'
+        'gt': '../data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml',
+        'det': '../data/AICity_data/train/S03/c010/det/det_yolo3.txt',
+        'video': '../data/AICity_data/train/S03/c010/vdo.avi'
     }
 
     show = {
