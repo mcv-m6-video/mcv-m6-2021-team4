@@ -43,6 +43,15 @@ while count < 20:
     print(count)
 
 
+alfa =2
+
+while count < frame_count:
+  success,image = vidcap.read()
+  image[abs(image - mean_all_frames)>= alfa*(image + 2)] = 0
+  img_list.append(image_processed) 
+  count += 1
+
+
 
 # list_frames = [frame for frame in glob.glob(path_to_frames_folder)]
 # print(len(list_frames))
