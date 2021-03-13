@@ -22,7 +22,7 @@ img_list=[]
 
 success,frame = vidcap.read()
 count = 0
-while count < 10:
+while count < train_len:
   success,frame = vidcap.read()
   img_list.append(frame) 
   count += 1
@@ -35,23 +35,24 @@ print("mean_train_frames.shape", mean_train_frames.shape)
 variance_train_frames= np.var(img_list,axis=0)
 print("variance_train_frames.shape", variance_train_frames.shape)
 
-vidcap.set(2,train_len)
-ret, frame = vidcap.read()
-while count < 20:
-    ret, frame = vidcap.read()
-    count += 1
-    print(count)
+# vidcap.set(2,train_len)
+# ret, frame = vidcap.read()
+# while count < 20:
+#     ret, frame = vidcap.read()
+#     count += 1
+#     print(count)
 
 
 alfa =2
+img_list_processed=[]
 
-while count < frame_count:
+while count < train_len + 2:
   success,image = vidcap.read()
-  image[abs(image - mean_all_frames)>= alfa*(image + 2)] = 0
-  img_list.append(image_processed) 
+  image[abs(image - mean_train_frames)>= alfa*(variance_train_frames + 2)] = 0
+  img_list_processed.append(image) 
   count += 1
 
-
+cv2.imwrite("d.bmp",img_list_processed[0].astype(int))
 
 # list_frames = [frame for frame in glob.glob(path_to_frames_folder)]
 # print(len(list_frames))
