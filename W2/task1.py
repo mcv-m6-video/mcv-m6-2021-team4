@@ -20,19 +20,27 @@ print("test_len: ",test_len)
 
 img_list=[]
 
-success,image = vidcap.read()
+success,frame = vidcap.read()
 count = 0
-while count < 25:
-  success,image = vidcap.read()
-  img_list.append(image) 
+while count < 10:
+  success,frame = vidcap.read()
+  img_list.append(frame) 
   count += 1
 
 #Compute mean 
-mean_all_frames= np.mean(img_list,axis=0)
-print("mean_all_frames.shape", mean_all_frames.shape)
-mean_all_frames = mean_all_frames.astype(int)
-mean_all_frames = cv2.convertScaleAbs(mean_all_frames)
-cv2.imwrite("d2.bmp",mean_all_frames)
+mean_train_frames= np.mean(img_list,axis=0)
+print("mean_train_frames.shape", mean_train_frames.shape)
+
+#Compute variance 
+variance_train_frames= np.var(img_list,axis=0)
+print("variance_train_frames.shape", variance_train_frames.shape)
+
+vidcap.set(2,train_len)
+ret, frame = vidcap.read()
+while count < 20:
+    ret, frame = vidcap.read()
+    count += 1
+    print(count)
 
 
 
