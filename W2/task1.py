@@ -47,15 +47,18 @@ print("std_train_frames.shape", std_train_frames.shape)
 
 
 alfa = 3
+kernel = np.ones((5,5),np.uint8)
 img_list_processed=[]
-segmentation = np.zeros((1080,1920))
+
 while count < train_len + 5:
     success,frame = vidcap.read()
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    segmentation = np.zeros((1080,1920))
     segmentation[abs(frame - mean_train_frames)>= alfa*(std_train_frames + 2)] = 255
-
+    segmentation = cv2.erode(segmentation,kernel,iterations = 1)
+    segmentation = cv2.dilate(segmentation,kernel,iterations = 1)
     img_list_processed.append(segmentation) 
     count += 1
 
 for i,img in enumerate(img_list_processed):
-    cv2.imwrite("output/seg_" + str(alfa) + "_" + str(i) + ".bmp", img.astype(int))
+    cv2.imwrite("./W2/output/seg_erode_dilate_" + str(alfa) + "_" + str(i) + ".bmp", img.astype(int))
