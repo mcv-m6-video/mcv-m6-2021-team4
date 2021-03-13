@@ -58,4 +58,4 @@ while count < train_len + 5:
     count += 1
 
 for i,img in enumerate(img_list_processed):
-    cv2.imwrite("seg_" + str(alfa) + "_" + str(i) + ".bmp", img.astype(int))
+    cv2.imwrite("output/seg_" + str(alfa) + "_" + str(i) + ".bmp", img.astype(int))
