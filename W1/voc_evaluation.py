@@ -46,7 +46,7 @@ def voc_iou(BBGT,bb):
     return overlaps
 
 
-def voc_eval(detections, annotations, ovthresh=0.5, is_confidence=True):
+def voc_eval(detections, annotations, ovthresh=0.5, is_confidence=False):
     """
     rec, prec, ap = voc_eval(detections,
                                 annotations
@@ -67,6 +67,7 @@ def voc_eval(detections, annotations, ovthresh=0.5, is_confidence=True):
         class_recs[frame_id] = {"bbox": bbox, "det": det}
  
     # read detections
+    
     image_ids = [x.frame for x in detections]
     BB = np.array([x.box for x in detections]).reshape(-1, 4)
 
