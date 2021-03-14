@@ -120,7 +120,7 @@ if __name__ == '__main__':
     print("Test frames: ", test_len)
 
     #Train
-    mean_train_frames, std_train_frames = train(vidcap, 250, saveResults=False)
+    mean_train_frames, std_train_frames = train(vidcap, train_len, saveResults=False)
 
     #Evaluate
     eval(vidcap, mean_train_frames, std_train_frames, 2, saveResults=False)
