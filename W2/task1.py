@@ -4,9 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import sys
-sys.path.append("./Users/polalbacar/Desktop/UAB/M6/Lab/mcv-m6-2021-team4")
-import W1.voc_evaluation
-import W1.aicity_reader
+sys.path.append("W1")
+import voc_evaluation
+import aicity_reader
 
 def background_estimator(image, alpha, mean_train_frames, std_train_frames):
     segmentation = np.zeros((1080,1920))
