@@ -33,6 +33,7 @@ def get_bboxes(seg,frame_id):
         if rect[2] < 50 or rect[3] < 50: continue #Discard small contours
         # print("cv2.contourArea(c)", cv2.contourArea(c))
         x,y,w,h = rect
+        #TODO: Bounding box
         bboxes.append([x,y,x+w,y+h]) #Great concern this is not the same format as the BoundingBox class but whopsies Pol
 
     for i,bbox in enumerate(bboxes):
