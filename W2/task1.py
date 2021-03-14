@@ -3,7 +3,10 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-
+import sys
+sys.path.append("./Users/polalbacar/Desktop/UAB/M6/Lab/mcv-m6-2021-team4")
+import W1.voc_evaluation
+import W1.aicity_reader
 
 def background_estimator(image, alpha, mean_train_frames, std_train_frames):
     segmentation = np.zeros((1080,1920))
@@ -17,20 +20,29 @@ def postprocess_after_segmentation(seg):
     return seg
 
 def get_bboxes(seg):
-    contours, _ = cv2.findContours(seg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    print(seg.shape)
+    new_seg = cv2.cvtColor(seg.astype(np.uint8), cv2.COLOR_GRAY2RGB)
+    contours, _ = cv2.findContours(seg.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    bboxes = []
+
     for c in contours:
         rect = cv2.boundingRect(c)
-        if rect[2] < 100 or rect[3] < 100: continue
-        print("cv2.contourArea(c)", cv2.contourArea(c))
+        if rect[2] < 50 or rect[3] < 50: continue #Discard small contours
+        # print("cv2.contourArea(c)", cv2.contourArea(c))
         x,y,w,h = rect
-        cv2.rectangle(im,(x,y),(x+w,y+h),(0,255,0),2)
-        cv2.putText(im,'Moth Detected',(x+w+10,y+h),0,0.3,(0,255,0))
-    cv2.imshow("Show",im)
-    cv2.waitKey()  
-    cv2.destroyAllWindows()
+        bboxes.append((x,y,x+w,y+h))
 
-    return
-    
+        # new_seg = cv2.rectangle(new_seg,(x,y),(x+w,y+h),(0,255,0),2)
+        # cv2.putText(seg,'Moth Detected',(x+w+10,y+h),0,0.3,(0,255,0))
+
+    # print("hola", new_seg.shape)
+    # cv2.imshow("Show",new_seg)
+    # cv2.waitKey()  
+    # cv2.destroyAllWindows()
+
+    return bboxes 
+
 def train(vidcap, train_len, saveResults=False):
     img_list=[]
     count = 0
@@ -58,21 +70,27 @@ def train(vidcap, train_len, saveResults=False):
 def eval(vidcap, mean_train_frames, std_train_frames, eval_num, saveResults=False):
     
     alpha = 4
-    img_list_processed=[]
+    img_list_processed = []
+    bboxes_byframe = []
 
     for t in tqdm(range(eval_num)):
         success,frame = vidcap.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
         segmentation = background_estimator(frame, alpha, mean_train_frames, std_train_frames)
-        segmentation = postprocess_after_segmentation(segmentation)
+        # segmentation = postprocess_after_segmentation(segmentation)
         bboxes = get_bboxes(segmentation)
-        img_list_processed.append(segmentation) 
-        
+        bboxes_byframe.append(bboxes)
+
         if saveResults:
             cv2.imwrite(f"./W2/output/seg_{str(t)}_pp_{str(alpha)}.bmp", segmentation.astype(int))
 
+    path_gt = '../data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml'
+    annotations = aicity_reader.read_annotations(path_gt)
+    rec, prec, ap = voc_eval(bboxes, annotations, ovthresh)
+    print(rec, prec, ap)
 
-    return img_list_processed
+    return
 
 if __name__ == '__main__':
 
@@ -88,7 +106,7 @@ if __name__ == '__main__':
     print("Test frames: ", test_len)
 
     #Train
-    mean_train_frames, std_train_frames = train(vidcap, train_len, saveResults=False)
+    mean_train_frames, std_train_frames = train(vidcap, 100, saveResults=False)
 
     #Evaluate
-    eval(vidcap, mean_train_frames, std_train_frames, 2, saveResults=True)
+    eval(vidcap, mean_train_frames, std_train_frames, 2, saveResults=False)
