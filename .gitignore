@@ -4,4 +4,5 @@ __pycache__/
 results/plot_frames/*
 results/video_frames/*
 data/vdo.avi
+data/AICity_data
 output

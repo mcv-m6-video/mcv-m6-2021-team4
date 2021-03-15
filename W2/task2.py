@@ -10,13 +10,31 @@ import voc_evaluation
 import aicity_reader
 import bounding_box
 
+h, w, nc = 1080, 1920, 1
 
+def adaptive_background_estimator(image, mean, std, alpha=3, rho=0.5):
+    mask = abs(image - mean) >= alpha * (std + 2)
 
-def background_estimator(image, alpha, mean_train_frames, std_train_frames):
-    segmentation = np.zeros((1080, 1920))
-    segmentation[abs(image - mean_train_frames) >= alpha * (std_train_frames + 2)] = 255
-    return segmentation
+    segmentation = np.zeros((h, w))
+    segmentation[mask] = 255
 
+    mean = np.where(mask, mean, rho * image + (1-rho) * mean)
+    std = np.where(mask, std, np.sqrt(rho * (image-mean)**2 + (1-rho) * std**2))
+
+    return segmentation, mean, std
+
+def adaptive_background_estimator_old(image, mean, std, alpha=3, rho=0.5):
+    bg_mask = abs(image - mean) < alpha * (std + 2)
+    fg_mask = np.logical_not(bg_mask)
+
+    segmentation = np.zeros((h, w))
+    segmentation[fg_mask] = 255
+
+    mean[bg_mask] = rho * image[bg_mask] + (1-rho) * mean[bg_mask]
+    variance = rho * (image[bg_mask] - mean[bg_mask])**2 + (1-rho) * std[bg_mask]**2
+    std[bg_mask] = np.sqrt(variance[bg_mask].reshape(h,w))
+
+    return segmentation, mean, std
 
 def postprocess_after_segmentation(seg):
     kernel = np.ones((5, 5), np.uint8)
@@ -59,7 +77,6 @@ def get_bboxes(seg, frame_id):
 
 def train(vidcap, train_len, saveResults=False):
     count = 0
-    h, w, nc = 1080, 1920, 1
     mean = np.zeros((h, w))
     M2 = np.zeros((h, w))
 
@@ -85,27 +102,25 @@ def train(vidcap, train_len, saveResults=False):
 
     return mean, std
 
-def eval(vidcap, mean_train_frames, std_train_frames, num_frames_eval, saveResults=False):
+def eval(vidcap, mean, std, params, saveResults=False):
     frame_num = train_len
-    alpha = 4
     img_list_processed = []
     bboxes_byframe = []
 
-    path_gt = './data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml'
-    annotations = aicity_reader.read_annotations(path_gt)
+    annotations = aicity_reader.read_annotations(params['gt_path'])
     annotations_grouped = aicity_reader.group_by_frame(annotations)
 
-    for t in tqdm(range(num_frames_eval)):
+    for t in tqdm(range(params['num_frames_eval'])):
         _, frame = vidcap.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        segmentation = background_estimator(frame, alpha, mean_train_frames, std_train_frames)
+        segmentation, mean, std = adaptive_background_estimator(frame, mean, std, params['alpha'], params['rho'])
         # segmentation = postprocess_after_segmentation(segmentation)
         bboxes = get_bboxes(segmentation, frame_num)
         bboxes_byframe = bboxes_byframe + bboxes
         frame_num += 1
         if saveResults:
-            cv2.imwrite(f"./W2/output/seg_{str(t)}_pp_{str(alpha)}.bmp", segmentation.astype(int))
+            cv2.imwrite(params['results_path'] + f"seg_{str(t)}_pp_{str(params['alpha'])}.bmp", segmentation.astype(int))
 
     rec, prec, ap = voc_evaluation.voc_eval(bboxes_byframe, annotations_grouped, ovthresh=0.5)
     print(rec, prec, ap)
@@ -114,9 +129,18 @@ def eval(vidcap, mean_train_frames, std_train_frames, num_frames_eval, saveResul
 
 
 if __name__ == '__main__':
-    path_video = "./data/vdo.avi"
-    vidcap = cv2.VideoCapture(path_video)
+    params = {
+        'video_path': "./data/vdo.avi",
+        'gt_path': './data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml',
+        'results_path': './W2/output/',
+        'num_frames_eval': 10,
+        'alpha': 3,
+        'rho': 0.5
+    }
+
+    vidcap = cv2.VideoCapture(params['video_path'])
     frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
+
     print("Total frames: ", frame_count)
 
     train_len = int(0.25 * frame_count)
@@ -126,7 +150,7 @@ if __name__ == '__main__':
     print("Test frames: ", test_len)
 
     # Train
-    mean_train_frames, std_train_frames = train(vidcap, train_len, saveResults=False)
+    mean, std = train(vidcap, train_len, saveResults=False)
 
     # Evaluate
-    eval(vidcap, mean_train_frames, std_train_frames, num_frames_eval=10, saveResults=True)
+    eval(vidcap, mean, std, params, saveResults=True)
