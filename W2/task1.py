@@ -1,4 +1,5 @@
 import glob
+import os
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -86,11 +87,11 @@ def train(vidcap, train_len, saveResults=False, usePickle=False):
         std_train_frames= np.std(img_list,axis=0) 
         print("Std computed")
 
-        '''mean_pickle = open('mean_pickle','wb')
+        mean_pickle = open('mean_pickle','wb')
         pickle.dump(mean_train_frames, mean_pickle)
 
         std_pickle = open('std_pickle','wb')
-        pickle.dump(std_train_frames, std_pickle)'''
+        pickle.dump(std_train_frames, std_pickle)
 
         if saveResults:
             cv2.imwrite("./W2/output/mean_train.png", mean_train_frames)
@@ -101,7 +102,7 @@ def train(vidcap, train_len, saveResults=False, usePickle=False):
 
 def eval(vidcap, mean_train_frames, std_train_frames, eval_num, saveResults=False):
     frame_num = train_len
-    alpha = 4
+    alpha = 3
     img_list_processed = []
     bboxes_byframe = []
 
@@ -118,8 +119,12 @@ def eval(vidcap, mean_train_frames, std_train_frames, eval_num, saveResults=Fals
         bboxes = get_bboxes(segmentation,frame_num)
         bboxes_byframe = bboxes_byframe + bboxes
         frame_num += 1
+
+
         if saveResults:
-            cv2.imwrite(f"./W2/output/seg_{str(t)}_pp_{str(alpha)}.bmp", segmentation.astype(int))
+            if not os.path.exists(f"./W2/output/{str(alpha)}"):
+                os.makedirs(f"./W2/output/{str(alpha)}")
+            cv2.imwrite(f"./W2/output/{str(alpha)}/seg_{str(t)}_pp.bmp", segmentation.astype(int))
 
         
         # if True:
@@ -147,7 +152,7 @@ if __name__ == '__main__':
     print("Test frames: ", test_len)
 
     #Train
-    mean_train_frames, std_train_frames = train(vidcap, train_len, saveResults=False, usePickle=True)
+    mean_train_frames, std_train_frames = train(vidcap, train_len, saveResults=False, usePickle=False)
 
     #Evaluate
-    eval(vidcap, mean_train_frames, std_train_frames, 2, saveResults=False)
+    eval(vidcap, mean_train_frames, std_train_frames, test_len, saveResults=True)
