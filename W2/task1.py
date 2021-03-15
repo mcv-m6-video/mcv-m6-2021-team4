@@ -8,6 +8,8 @@ sys.path.append("W1")
 import voc_evaluation
 import aicity_reader
 import bounding_box
+from utils import draw_boxes
+import pickle
 
 def background_estimator(image, alpha, mean_train_frames, std_train_frames):
     segmentation = np.zeros((1080,1920))
@@ -33,8 +35,7 @@ def get_bboxes(seg,frame_id):
         if rect[2] < 50 or rect[3] < 50: continue #Discard small contours
         # print("cv2.contourArea(c)", cv2.contourArea(c))
         x,y,w,h = rect
-        #TODO: Bounding box
-        bboxes.append([x,y,x+w,y+h]) #Great concern this is not the same format as the BoundingBox class but whopsies Pol
+        bboxes.append([x,y,x+w,y+h])
 
     for i,bbox in enumerate(bboxes):
 
@@ -52,29 +53,51 @@ def get_bboxes(seg,frame_id):
 
     return output
 
-def train(vidcap, train_len, saveResults=False):
-    img_list=[]
-    count = 0
+def train(vidcap, train_len, saveResults=False, usePickle=False):
 
-    for t in tqdm(range(train_len)):
-        success,frame = vidcap.read()
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        img_list.append(frame) 
-        count += 1
+    if usePickle:
+        mean_f = open('data/mean_pickle', 'rb')
+        mean_train_frames = pickle.load(mean_f)
 
-    #Compute mean 
-    mean_train_frames= np.mean(img_list,axis=0)
-    print("Mean computed")
+        std_f = open('data/std_pickle', 'rb')
+        std_train_frames = pickle.load(std_f)
 
-    #Compute std 
-    std_train_frames= np.std(img_list,axis=0) 
-    print("Std computed")
+        cv2.imwrite("./W2/output/mean_train_pickle.png", mean_train_frames)
+        cv2.imwrite("./W2/output/std_train_pickle.png", std_train_frames)
 
-    if saveResults:
-        cv2.imwrite("./W2/output/mean_train.png", mean_train_frames)
-        cv2.imwrite("./W2/output/std_train.png", std_train_frames)
+        print("1", type(mean_train_frames))
+        print(mean_train_frames)
+        return mean_train_frames, std_train_frames
 
-    return mean_train_frames, std_train_frames
+    else:
+        img_list=[]
+        for t in tqdm(range(train_len)):
+            success,frame = vidcap.read()
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            img_list.append(frame) 
+
+        #Compute mean 
+        mean_train_frames= np.mean(img_list,axis=0)
+        print("Mean computed")
+        print(mean_train_frames)
+        print("2",type(mean_train_frames))
+
+        #Compute std 
+        std_train_frames= np.std(img_list,axis=0) 
+        print("Std computed")
+
+        '''mean_pickle = open('mean_pickle','wb')
+        pickle.dump(mean_train_frames, mean_pickle)
+
+        std_pickle = open('std_pickle','wb')
+        pickle.dump(std_train_frames, std_pickle)'''
+
+        if saveResults:
+            cv2.imwrite("./W2/output/mean_train.png", mean_train_frames)
+            cv2.imwrite("./W2/output/std_train.png", std_train_frames)
+
+        
+        return mean_train_frames, std_train_frames
 
 def eval(vidcap, mean_train_frames, std_train_frames, eval_num, saveResults=False):
     frame_num = train_len
@@ -82,7 +105,7 @@ def eval(vidcap, mean_train_frames, std_train_frames, eval_num, saveResults=Fals
     img_list_processed = []
     bboxes_byframe = []
 
-    path_gt = r'data\AICity_data\train\S03\c010\ai_challenge_s03_c010-full_annotation.xml'
+    path_gt = './data/ai_challenge_s03_c010-full_annotation.xml'
     annotations = aicity_reader.read_annotations(path_gt)
     annotations_grouped = aicity_reader.group_by_frame(annotations)
 
@@ -93,11 +116,15 @@ def eval(vidcap, mean_train_frames, std_train_frames, eval_num, saveResults=Fals
         segmentation = background_estimator(frame, alpha, mean_train_frames, std_train_frames)
         # segmentation = postprocess_after_segmentation(segmentation)
         bboxes = get_bboxes(segmentation,frame_num)
-        bboxes_byframe=bboxes_byframe + bboxes
+        bboxes_byframe = bboxes_byframe + bboxes
         frame_num += 1
         if saveResults:
             cv2.imwrite(f"./W2/output/seg_{str(t)}_pp_{str(alpha)}.bmp", segmentation.astype(int))
+
         
+        # if True:
+        #     frame = draw_boxes(frame, frame_id, grouped_det[frame_id], color='b', det=True)
+        #     frame_iou = mean_iou(grouped_det[frame_id], grouped_gt[frame_id], sort=True)
 
 
 
@@ -120,7 +147,7 @@ if __name__ == '__main__':
     print("Test frames: ", test_len)
 
     #Train
-    mean_train_frames, std_train_frames = train(vidcap, train_len, saveResults=False)
+    mean_train_frames, std_train_frames = train(vidcap, train_len, saveResults=False, usePickle=True)
 
     #Evaluate
     eval(vidcap, mean_train_frames, std_train_frames, 2, saveResults=False)
