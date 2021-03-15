@@ -5,10 +5,13 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import sys
 
+from collections import OrderedDict
+from itertools import islice
+
 sys.path.append("W1")
 import voc_evaluation
-import aicity_reader
-import bounding_box
+from aicity_reader import read_annotations, read_detections, group_by_frame
+from bounding_box import BoundingBox
 
 h, w, nc = 1080, 1920, 1
 
@@ -18,28 +21,22 @@ def adaptive_background_estimator(image, mean, std, alpha=3, rho=0.5):
     segmentation = np.zeros((h, w))
     segmentation[mask] = 255
 
+    # provar d'actualitzar el bg cada X frames
     mean = np.where(mask, mean, rho * image + (1-rho) * mean)
     std = np.where(mask, std, np.sqrt(rho * (image-mean)**2 + (1-rho) * std**2))
 
     return segmentation, mean, std
 
-def adaptive_background_estimator_old(image, mean, std, alpha=3, rho=0.5):
-    bg_mask = abs(image - mean) < alpha * (std + 2)
-    fg_mask = np.logical_not(bg_mask)
-
-    segmentation = np.zeros((h, w))
-    segmentation[fg_mask] = 255
-
-    mean[bg_mask] = rho * image[bg_mask] + (1-rho) * mean[bg_mask]
-    variance = rho * (image[bg_mask] - mean[bg_mask])**2 + (1-rho) * std[bg_mask]**2
-    std[bg_mask] = np.sqrt(variance[bg_mask].reshape(h,w))
-
-    return segmentation, mean, std
+def static_background_estimator(image, mean, std, alpha=3):
+    segmentation = np.zeros((1080, 1920))
+    segmentation[abs(image - mean) >= alpha * (std + 2)] = 255
+    return segmentation
 
 def postprocess_after_segmentation(seg):
-    kernel = np.ones((5, 5), np.uint8)
-    seg = cv2.erode(seg, kernel, iterations=1)
-    seg = cv2.dilate(seg, kernel, iterations=1)
+    kernel = np.ones((2, 2), np.uint8)
+    # seg = cv2.erode(seg, kernel, iterations=1)
+    # seg = cv2.dilate(seg, kernel, iterations=1)
+    seg = cv2.morphologyEx(seg, cv2.MORPH_OPEN, kernel)
     return seg
 
 
@@ -56,15 +53,16 @@ def get_bboxes(seg, frame_id):
         # print("cv2.contourArea(c)", cv2.contourArea(c))
         x, y, w, h = rect
         # TODO: Bounding box
-        bboxes.append(
-            [x, y, x + w, y + h])  # Great concern this is not the same format as the BoundingBox class but whopsies Pol
+        bboxes.append([x, y, x + w, y + h])
 
     for i, bbox in enumerate(bboxes):
         # output[i]={'box': bbox,'id': i,'frame':frame_id}
-        output.append(bounding_box.BoundingBox(id=i, label='car', frame=frame_id, xtl=bbox[0], ytl=bbox[1], xbr=bbox[2],
-                                               ybr=bbox[3]))
 
-        # new_seg = cv2.rectangle(new_seg,(x,y),(x+w,y+h),(0,255,0),2)
+        # TODO: pillar bicis a gt
+        output.append(BoundingBox(id=i, label='car', frame=frame_id, xtl=bbox[0],
+                                  ytl=bbox[1], xbr=bbox[2], ybr=bbox[3]))
+
+        # new_seg = cv2.rectangle(new_seg, (bbox[0],bbox[1]),(bbox[2],bbox[3]),(0,255,0),2)
         # cv2.putText(seg,'Moth Detected',(x+w+10,y+h),0,0.3,(0,255,0))
 
     # print("hola", new_seg.shape)
@@ -74,9 +72,7 @@ def get_bboxes(seg, frame_id):
 
     return output
 
-
-def train(vidcap, train_len, saveResults=False):
-    count = 0
+def get_mean_std():
     mean = np.zeros((h, w))
     M2 = np.zeros((h, w))
 
@@ -92,37 +88,43 @@ def train(vidcap, train_len, saveResults=False):
         M2 += delta * delta2
 
     mean = mean
-    std = np.sqrt(M2/count)
+    std = np.sqrt(M2 / count)
+
+def train(vidcap, train_len, results_path, saveResults=False):
+    count = 0
+
+    mean, std = get_mean_std()
 
     print("Mean and std computed")
 
     if saveResults:
-        cv2.imwrite("./W2/output/mean_train.png", mean)
-        cv2.imwrite("./W2/output/std_train.png", std)
+        cv2.imwrite(results_path + "mean_train.png", mean)
+        cv2.imwrite(results_path + "std_train.png", std)
 
     return mean, std
 
 def eval(vidcap, mean, std, params, saveResults=False):
-    frame_num = train_len
-    img_list_processed = []
     bboxes_byframe = []
 
-    annotations = aicity_reader.read_annotations(params['gt_path'])
-    annotations_grouped = aicity_reader.group_by_frame(annotations)
-
+    init_frame = int(vidcap.get(cv2.CAP_PROP_POS_FRAMES))
+    frame_id = init_frame
     for t in tqdm(range(params['num_frames_eval'])):
         _, frame = vidcap.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        segmentation, mean, std = adaptive_background_estimator(frame, mean, std, params['alpha'], params['rho'])
-        # segmentation = postprocess_after_segmentation(segmentation)
-        bboxes = get_bboxes(segmentation, frame_num)
-        bboxes_byframe = bboxes_byframe + bboxes
-        frame_num += 1
-        if saveResults:
-            cv2.imwrite(params['results_path'] + f"seg_{str(t)}_pp_{str(params['alpha'])}.bmp", segmentation.astype(int))
+        # segmentation, mean, std = adaptive_background_estimator(frame, mean, std, params['alpha'], params['rho'])
+        segmentation = static_background_estimator(frame, mean, std, params['alpha'])
 
-    rec, prec, ap = voc_evaluation.voc_eval(bboxes_byframe, annotations_grouped, ovthresh=0.5)
+        # segmentation = postprocess_after_segmentation(segmentation)
+        bboxes = get_bboxes(segmentation, frame_id)
+        bboxes_byframe = bboxes_byframe + bboxes
+        if saveResults:
+            cv2.imwrite(params['results_path'] + f"seg_{str(frame_id)}_pp_{str(params['alpha'])}.bmp", segmentation.astype(int))
+        frame_id += 1
+
+    gt = read_annotations(params['gt_path'], grouped=True, use_parked=False)
+    gt_filtered = OrderedDict(list(islice(gt.items(), init_frame, frame_id)))  # only use the specified frames
+    rec, prec, ap = voc_evaluation.voc_eval(bboxes_byframe, gt_filtered, ovthresh=0.5, use_confidence=False)
     print(rec, prec, ap)
 
     return
@@ -133,13 +135,15 @@ if __name__ == '__main__':
         'video_path': "./data/vdo.avi",
         'gt_path': './data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml',
         'results_path': './W2/output/',
-        'num_frames_eval': 10,
+        'num_frames_eval': 3,
         'alpha': 3,
         'rho': 0.5
     }
 
     vidcap = cv2.VideoCapture(params['video_path'])
     frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
+    frame_width = int(vidcap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    # TODO: frame_width, height, nchannels
 
     print("Total frames: ", frame_count)
 
@@ -150,7 +154,7 @@ if __name__ == '__main__':
     print("Test frames: ", test_len)
 
     # Train
-    mean, std = train(vidcap, train_len, saveResults=False)
+    mean, std = train(vidcap, train_len, params['results_path'], saveResults=False)
 
     # Evaluate
     eval(vidcap, mean, std, params, saveResults=True)

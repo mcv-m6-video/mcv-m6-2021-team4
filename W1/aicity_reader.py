@@ -2,7 +2,7 @@ import xmltodict
 from bounding_box import BoundingBox
 from collections import defaultdict, OrderedDict
 
-def read_annotations(path):
+def read_annotations(path, grouped=True, use_parked=False):
     with open(path) as f:
         tracks = xmltodict.parse(f.read())['annotations']['track']
 
@@ -15,6 +15,10 @@ def read_annotations(path):
             continue
 
         for box in track['box']:
+            is_parked = box['attribute']['#text'] == 'true'
+            if not use_parked and is_parked:
+                continue
+
             annotations.append(BoundingBox(
                 id=int(id),
                 label=label,
@@ -24,8 +28,11 @@ def read_annotations(path):
                 xbr=float(box['@xbr']),
                 ybr=float(box['@ybr']),
                 occluded=box['@occluded'] == '1',
-                parked=box['attribute']['#text'] == 'true'
+                parked=is_parked
             ))
+
+    if grouped:
+        return group_by_frame(annotations)
 
     return annotations
 
