@@ -28,8 +28,7 @@ def task3_3 (sen, frame):
     return
 
 
-if __name__ == "__main__":
-
+def run():
     gt_path = "../data/of_ground_truth"
     estimated_path = "../data/of_estimations_LK"
     frames = ["000045_10.png", "000157_10.png"]

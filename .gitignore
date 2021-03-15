@@ -1,3 +1,7 @@
 .vscode/*
 .idea/*
 __pycache__/
+results/plot_frames/*
+results/video_frames/*
+data/vdo.avi
+output
