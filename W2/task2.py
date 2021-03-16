@@ -43,7 +43,7 @@ def train(vidcap, train_len, results_path, saveResults=False):
 
     return mean, std
 
-def eval(vidcap, mean, std, params, saveResults=False):
+def eval(vidcap,frame_size, mean, std, params, saveResults=False):
     gt = read_annotations(params['gt_path'], grouped=True, use_parked=False)
     frame_id = int(vidcap.get(cv2.CAP_PROP_POS_FRAMES))
     detections = []
@@ -52,7 +52,7 @@ def eval(vidcap, mean, std, params, saveResults=False):
         _, frame = vidcap.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        segmentation, mean, std = bg_est_method[params['bg_est']](frame, mean, std, params)
+        segmentation, mean, std = bg_est_method[params['bg_est']](frame,frame_size, mean, std, params)
         segmentation = postprocess_fg(segmentation)
 
         if saveResults:
@@ -88,6 +88,7 @@ if __name__ == '__main__':
         'video_path': "./data/vdo.avi",
         'gt_path': './data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml',
         'results_path': './W2/output/',
+        'roi_path': './data\AICity_data\train\S03\c010\roi.jpg',
         'num_frames_eval': 1606,
         'bg_est': 'static',
         'alpha': 3,
@@ -99,7 +100,7 @@ if __name__ == '__main__':
     frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
     frame_width = int(vidcap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(vidcap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
+    frame_size = (frame_height,frame_width)
     print("Total frames: ", frame_count)
 
     train_len = int(0.25 * frame_count)
@@ -112,4 +113,4 @@ if __name__ == '__main__':
     mean, std = train(vidcap, train_len, params['results_path'], saveResults=False)
 
     # Evaluate
-    eval(vidcap, mean, std, params, saveResults=False)
+    eval(vidcap,frame_size, mean, std, params, saveResults=False)
