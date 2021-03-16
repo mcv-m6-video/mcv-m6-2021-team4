@@ -28,9 +28,9 @@ def train_sota(vidcap, train_len, backSub):
     
     return backSub #return backSub updated
 
-def eval_sota(vidcap, test_len, backSub, showResults=True):
+def eval_sota(vidcap, test_len, backSub, params, showResults=True):
     print("Evaluating SOTA")  
-    gt = read_annotations('./data/ai_challenge_s03_c010-full_annotation.xml', grouped=True, use_parked=False)
+    gt = read_annotations(params["gt_path"], grouped=True, use_parked=False)
     frame_id = int(vidcap.get(cv2.CAP_PROP_POS_FRAMES))
 
     detections = []
@@ -43,7 +43,7 @@ def eval_sota(vidcap, test_len, backSub, showResults=True):
 
         segmentation = backSub.apply(frame)
         segmentation[segmentation<200] = 0
-        det_bboxes = fg_bboxes(segmentation,frame_id)
+        det_bboxes = fg_bboxes(segmentation,frame_id, params)
         detections += det_bboxes
 
         segmentation = cv2.cvtColor(segmentation.astype(np.uint8), cv2.COLOR_GRAY2RGB)
@@ -56,7 +56,7 @@ def eval_sota(vidcap, test_len, backSub, showResults=True):
         if showResults:
             segmentation = draw_boxes(image=segmentation, boxes=gt_bboxes, color='g', linewidth=3)
             cv2.rectangle(frame, (10, 2), (120,20), (255,255,255), -1)
-            cv2.putText(frame, method+" - "+str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
+            cv2.putText(frame, params["sota_method"]+" - "+str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
             segmentation = draw_boxes(image=segmentation, boxes=det_bboxes, color='r', linewidth=3)
             cv2.imshow("Segmentation mask with detected boxes and gt", segmentation)
             cv2.imshow('Frame', frame)
@@ -73,7 +73,7 @@ def eval_sota(vidcap, test_len, backSub, showResults=True):
     print("AP: ", ap)
 
 
-def run():
+def run(args):
     path_video = "data/vdo.avi"
     vidcap = cv2.VideoCapture(path_video)
     frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -85,21 +85,28 @@ def run():
     print("Train frames: ", train_len)
     print("Test frames: ", test_len)
 
-    method = 'MOG2'
-    if method == 'MOG':
-        backSub = cv2.bgsegm.createBackgroundSubtractorMOG()
-    elif method == 'MOG2':
-        backSub = cv2.createBackgroundSubtractorMOG2(history=500,varThreshold=16,detectShadows=True)
-    elif method == 'LSBP':
+    params = {
+        'video_path': args.video_path,
+        'roi_path': args.roi_path,
+        'gt_path': args.gt_path,
+        'show_boxes': args.show_boxes,
+        'sota_method': args.sota_method
+    }
+
+
+    print("Background Substractor Method: ", args.sota_method)
+
+    if params["sota_method"] == 'MOG':
+        backSub = cv2.bgsegm.createBackgroundSubtractorMOG(nmixtures = 2, history=200)
+    elif params["sota_method"] == 'MOG2':
+        backSub = cv2.createBackgroundSubtractorMOG2(history=100,varThreshold=30,detectShadows=True)
+    elif params["sota_method"] == 'LSBP':
         backSub = cv2.bgsegm.createBackgroundSubtractorLSBP()
-    elif method == 'KNN':
+    elif params["sota_method"] == 'KNN':
         backSub = cv2.createBackgroundSubtractorKNN(history=100, detectShadows=True)
 
-    print("Background Substractor Method: ", method)
-
-
     backSub = train_sota(vidcap, train_len, backSub)
-    backSub = eval_sota(vidcap, test_len, backSub)
+    backSub = eval_sota(vidcap, test_len, backSub, params)
 
 
 

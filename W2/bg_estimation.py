@@ -77,9 +77,11 @@ def adaptive_bg_est(image, frame_size, mean, std, params):
 
     return segmentation, mean, std
 
-def fg_bboxes(seg, frame_id):
+def fg_bboxes(seg, frame_id, params):
     bboxes = []
-    contours, _ = cv2.findContours(seg.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    roi = cv2.imread(params['roi_path'], cv2.IMREAD_GRAYSCALE) / 255
+    segmentation = seg * roi
+    contours, _ = cv2.findContours(segmentation.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     idx = 0
     for c in contours:

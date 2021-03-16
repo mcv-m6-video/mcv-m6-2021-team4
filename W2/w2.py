@@ -43,6 +43,9 @@ def parse_args(args=sys.argv[1:]):
     parser.add_argument('--save_results', action='store_true',
                         help='save detections')
 
+    parser.add_argument('--sota_method', type=str, default="MOG2",
+                        help='State of the art method for Background Substraction task. Options: MOG, MOG2')
+
     return parser.parse_args(args)
 
 if __name__ == '__main__':
