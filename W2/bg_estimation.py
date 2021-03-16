@@ -49,7 +49,7 @@ def static_bg_est(image,frame_size, mean, std, params):
     h,w = frame_size
     segmentation = np.zeros((h, w))
     mask = abs(image - mean) >= alpha * (std + 2)
-    
+    roi = cv2.imread(params['roi_path'],cv2.IMREAD_GRAYSCALE)
     nc = color_space[params['color_space']][1]
     if nc == 1:
         segmentation[mask] = 255
@@ -63,14 +63,14 @@ def static_bg_est(image,frame_size, mean, std, params):
         
         segmentation[voting] = 255
         
-    return segmentation, mean, std
+    return segmentation*roi, mean, std
 
 def adaptive_bg_est(image,frame_size, mean, std, params):
     alpha = params['alpha']
     rho = params['rho']
     h,w = frame_size
     mask = abs(image - mean) >= alpha * (std + 2)
-
+    roi = cv2.imread(params['roi_path'],cv2.IMREAD_GRAYSCALE)
     segmentation = np.zeros((h, w))
     nc = color_space[params['color_space']][1]
     
@@ -85,12 +85,12 @@ def adaptive_bg_est(image,frame_size, mean, std, params):
             raise ValueError('Voting method does not exist')
         
         segmentation[voting] = 255
-    
+        mask = voting
     # provar d'actualitzar el bg cada X frames
     mean = np.where(mask, mean, rho * image + (1-rho) * mean)
     std = np.where(mask, std, np.sqrt(rho * (image-mean)**2 + (1-rho) * std**2))
 
-    return segmentation, mean, std
+    return segmentation*roi, mean, std
 
 
 def postprocess_fg(seg):
