@@ -119,7 +119,7 @@ def eval(vidcap, frame_size, mean, std, params):
         segmentation = segmentation * roi
         segmentation = postprocess_fg(segmentation)
 
-        if params['save_results'] and frame_id == 535: # if frame_id >= 535 and frame_id < 550
+        if params['save_results'] and frame_id >= 1169 and frame_id < 1229 : # if frame_id >= 535 and frame_id < 550
             cv2.imwrite(params['results_path'] + f"seg_{str(frame_id)}_pp_{str(params['alpha'])}.bmp", segmentation.astype(int))
 
         det_bboxes = fg_bboxes(segmentation, frame_id)
