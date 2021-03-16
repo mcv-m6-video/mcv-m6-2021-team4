@@ -1,11 +1,15 @@
-import numpy as np
 import cv2
+import numpy as np
+from tqdm import tqdm
 import sys
-from copy import deepcopy
 
 sys.path.append("W1")
+sys.path.append("W2")
 from bounding_box import BoundingBox
-
+import voc_evaluation
+from aicity_reader import read_annotations, read_detections, group_by_frame
+from utils import draw_boxes
+from bg_postprocess import temporal_filter, postprocess_fg, discard_overlapping_bboxes
 
 color_space = {
     'grayscale':[cv2.COLOR_BGR2GRAY,1],
@@ -16,6 +20,14 @@ color_space = {
     'YCrCb': [cv2.COLOR_BGR2YCrCb,3]
 }
 
+color_space = {
+    'grayscale':[cv2.COLOR_BGR2GRAY,1],
+    'RGB': [cv2.COLOR_BGR2RGB,3],
+    'HSV': [cv2.COLOR_BGR2HSV,3],
+    'LAB': [cv2.COLOR_BGR2LAB,3],
+    'YUV': [cv2.COLOR_BGR2YUV,3],
+    'YCrCb': [cv2.COLOR_BGR2YCrCb,3]
+}
 
 def static_bg_est(image, frame_size, mean, std, params):
     alpha = params['alpha']
@@ -24,7 +36,6 @@ def static_bg_est(image, frame_size, mean, std, params):
     mask = abs(image - mean) >= alpha * (std + 2)
 
     roi = cv2.imread(params['roi_path'], cv2.IMREAD_GRAYSCALE) / 255
-    # _,roi = cv2.threshold(roi,127,255,cv2.THRESH_BINARY)
 
     nc = color_space[params['color_space']][1]
     if nc == 1:
@@ -49,7 +60,6 @@ def adaptive_bg_est(image, frame_size, mean, std, params):
     mask = abs(image - mean) >= alpha * (std + 2)
 
     roi = cv2.imread(params['roi_path'], cv2.IMREAD_GRAYSCALE) / 255
-    # _,roi = cv2.threshold(roi,127,255,cv2.THRESH_BINARY)
 
     segmentation = np.zeros((h, w))
     nc = color_space[params['color_space']][1]
@@ -72,193 +82,9 @@ def adaptive_bg_est(image, frame_size, mean, std, params):
 
     return segmentation * roi, mean, std
 
-
-def static_bg_est_old(image, mean, std, params):
-    alpha = params['alpha']
-    segmentation = np.zeros((1080, 1920))
-    segmentation[abs(image - mean) >= alpha * (std + 2)] = 255
-    return segmentation, mean, std
-
-def adaptive_bg_est_old(image, mean, std, params):
-    alpha = params['alpha']
-    rho = params['rho']
-
-    mask = abs(image - mean) >= alpha * (std + 2)
-
-    segmentation = np.zeros((h, w))
-    segmentation[mask] = 255
-
-    # provar d'actualitzar el bg cada X frames
-    mean = np.where(mask, mean, rho * image + (1-rho) * mean)
-    std = np.where(mask, std, np.sqrt(rho * (image-mean)**2 + (1-rho) * std**2))
-
-    return segmentation, mean, std
-
-def intersection_bboxes(bboxA, bboxB):
-    # determine the (x, y)-coordinates of the intersection rectangle
-    xA = max(bboxA.xtl, bboxB.xtl)
-    yA = max(bboxA.ytl, bboxB.ytl)
-    xB = min(bboxA.xbr, bboxB.xbr)
-    yB = min(bboxA.ybr, bboxB.ybr)
-    # return the area of intersection rectangle
-    return max(0, xB - xA) * max(0, yB - yA)
-
-def intersection_over_union(bboxA, bboxB):
-    interArea = intersection_bboxes(bboxA, bboxB)
-    iou = interArea / float(bboxA.area + bboxB.area - interArea)
-    return iou
-
-def intersection_over_areas(bboxA, bboxB):
-    interArea = intersection_bboxes(bboxA, bboxB)
-    return interArea/bboxA.area, interArea/bboxB.area
-
-def temporal_filter(detections, init, end):
-    good_detections = []
-
-    if init in detections:
-        for d in detections[init]:
-            good_detections.append(d)
-
-    if end-1 in detections:
-        for d in detections[end-1]:
-            good_detections.append(d)
-
-    iou_thr = 0.6
-    for current_frame in range(init+1, end-1):
-        if current_frame not in detections:
-            continue
-        det_current = detections[current_frame]
-        det_prev = []
-        det_next = []
-        if current_frame-1 in detections:
-            det_prev = detections[current_frame-1]
-        if current_frame+1 in detections:
-            det_next = detections[current_frame+1]
-
-        for d_curr in det_current:
-            max_iou_prev = 0
-            max_iou_next = 0
-
-            for d_prev in det_prev:
-                iou_prev = intersection_over_union(d_curr, d_prev)
-                max_iou_prev = max(max_iou_prev, iou_prev)
-
-            for d_next in det_next:
-                iou_next = intersection_over_union(d_curr, d_next)
-                max_iou_next = max(max_iou_next, iou_next)
-
-            if max_iou_prev >= iou_thr or max_iou_next >= iou_thr:
-                good_detections.append(d_curr)
-
-    return good_detections
-
-def postprocess_fg(seg):
-
-    kernel = np.ones((2, 2), np.uint8)
-    seg = cv2.erode(seg, kernel, iterations=1)
-    kernel = np.ones((3,4), np.uint8)
-    seg = cv2.dilate(seg, kernel, iterations=1)
-
-    seg = cv2.morphologyEx(seg, cv2.MORPH_OPEN, np.ones((7, 4), np.uint8))
-    seg = cv2.morphologyEx(seg, cv2.MORPH_CLOSE, np.ones((4, 7), np.uint8))
-
-    return seg
-
-def postprocess_fg_flood(seg):
-    kernel = np.ones((2, 2), np.uint8)
-    seg = cv2.erode(seg, kernel, iterations=1)
-    kernel = np.ones((3, 4), np.uint8)
-    seg = cv2.dilate(seg, kernel, iterations=1)
-
-    contours, _ = cv2.findContours(seg.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    output = np.zeros(shape=seg.shape)
-    cv2.drawContours(output, contours, contourIdx=-1, color=(255,255,255), thickness=2)
-    output = output.astype(np.uint8)
-
-    # Copy the thresholded image.
-    im_floodfill = output.copy()
-
-    # Mask used to flood filling.
-    # Notice the size needs to be 2 pixels than the image.
-    h, w = output.shape[:2]
-    mask = np.zeros((h + 2, w + 2), np.uint8)
-
-    # Floodfill from point (0, 0)
-    cv2.floodFill(im_floodfill, mask, (0, 0), 255, 8);
-
-    # Invert floodfilled image
-    im_floodfill_inv = cv2.bitwise_not(im_floodfill)
-
-    # Combine the two images to get the foreground.
-    im_out = output | im_floodfill_inv
-
-    # Display images.
-    # cv2.imshow("Thresholded Image", seg)
-    # cv2.imshow("Floodfilled Image", im_floodfill)
-    # cv2.imshow("Inverted Floodfilled Image", im_floodfill_inv)
-    # cv2.imshow("Foreground", im_out)
-    # cv2.imshow("Foreground2", im_out2)
-    # cv2.waitKey(0)
-
-    return im_out
-
-def discard_overlapping_bboxes(bboxes):
-    ioa_thr = 0.7
-    idxA = 0
-    tmp_bboxes = deepcopy(bboxes)
-    while idxA < len(bboxes)-1:
-        discard = []
-        discard_tmp = []
-        discardA = False
-
-        bboxA = bboxes[idxA]
-        del tmp_bboxes[0]
-
-        for idxB, bboxB in enumerate(tmp_bboxes):
-            ioaA, ioaB = intersection_over_areas(bboxA, bboxB)
-
-            if ioaA > ioa_thr or ioaB > ioa_thr:
-                if ioaA > ioaB:
-                    discardA = True
-                    if idxA not in discard:
-                        discard.append(idxA)
-                else:
-                    discard.append(idxA+idxB+1)
-                    discard_tmp.append(idxB)
-
-        discarded=0
-        for d in sorted(discard):
-            del bboxes[d-discarded]
-            discarded += 1
-
-        discarded_tmp = 0
-        for d in sorted(discard_tmp):
-            del tmp_bboxes[d-discarded_tmp]
-            discarded_tmp += 1
-
-        if not discardA:
-            idxA +=1
-
-        if len(tmp_bboxes) == 0:
-            break
-
-    return bboxes
-
-
 def fg_bboxes(seg, frame_id):
     bboxes = []
     contours, _ = cv2.findContours(seg.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    output = np.zeros(shape=seg.shape)
-    cv2.drawContours(output, contours, contourIdx=-1, color=(255, 255, 255), thickness=2)
-    output = output.astype(np.uint8)
-
-    # cv2.imshow('seg', seg)
-    # cv2.imshow('contours', output)
-    # cv2.waitKey(0)
-
-    # AR, size
 
     idx = 0
     for c in contours:
@@ -275,3 +101,85 @@ def fg_bboxes(seg, frame_id):
 
     return discard_overlapping_bboxes(bboxes)
     # return bboxes
+
+
+bg_est_method = {
+    'static': static_bg_est,
+    'adaptive': adaptive_bg_est
+}
+
+def eval(vidcap, frame_size, mean, std, params):
+    gt = read_annotations(params['gt_path'], grouped=True, use_parked=False)
+    init_frame = int(vidcap.get(cv2.CAP_PROP_POS_FRAMES))
+    frame_id = init_frame
+    detections = []
+    annotations = {}
+    for t in tqdm(range(params['num_frames_eval'])):
+        _, frame = vidcap.read()
+        frame = cv2.cvtColor(frame, color_space[params['color_space']][0])
+
+        segmentation, mean, std = bg_est_method[params['bg_est']](frame,frame_size, mean, std, params)
+        segmentation = postprocess_fg(segmentation)
+
+        if params['save_results'] and frame_id == 535: # if frame_id >= 535 and frame_id < 550
+            cv2.imwrite(params['results_path'] + f"seg_{str(frame_id)}_pp_{str(params['alpha'])}.bmp", segmentation.astype(int))
+
+        det_bboxes = fg_bboxes(segmentation, frame_id)
+        detections += det_bboxes
+
+        gt_bboxes = []
+        if frame_id in gt:
+            gt_bboxes = gt[frame_id]
+        annotations[frame_id] = gt_bboxes
+
+        if params['show_boxes']:
+            seg = cv2.cvtColor(segmentation.astype(np.uint8), cv2.COLOR_GRAY2RGB)
+            seg_boxes = draw_boxes(image=seg, boxes=det_bboxes, color='r', linewidth=3)
+            seg_boxes = draw_boxes(image=seg_boxes, boxes=gt_bboxes, color='g', linewidth=3)
+
+            cv2.imshow("Segmentation mask with detected boxes and gt", seg_boxes)
+            keyboard = cv2.waitKey(30)
+            if keyboard == 'q' or keyboard == 27:
+                break
+
+        frame_id += 1
+
+    detections = temporal_filter(group_by_frame(detections), init=init_frame, end=frame_id)
+
+    rec, prec, ap = voc_evaluation.voc_eval(detections, annotations, ovthresh=0.5, use_confidence=False)
+    print(rec, prec, ap)
+
+    return
+
+def train(vidcap, frame_size, train_len, params):
+    count = 0
+    h, w = frame_size
+    nc = color_space[params['color_space']][1]
+    if nc == 1:
+        mean = np.zeros((h, w))
+        M2 = np.zeros((h, w))
+    else:
+        mean = np.zeros((h, w, nc))
+        M2 = np.zeros((h, w, nc))
+
+    # Compute mean and std
+    for t in tqdm(range(train_len)):
+        _, frame = vidcap.read()
+        frame = cv2.cvtColor(frame, color_space[params['color_space']][0])
+
+        count += 1
+        delta = frame - mean
+        mean += delta / count
+        delta2 = frame - mean
+        M2 += delta * delta2
+
+    mean = mean
+    std = np.sqrt(M2 / count)
+
+    print("Mean and std computed")
+
+    if params['save_results']:
+        cv2.imwrite(params['results_path'] + "mean_train.png", mean)
+        cv2.imwrite(params['results_path'] + "std_train.png", std)
+
+    return mean, std

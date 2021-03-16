@@ -47,7 +47,7 @@ def BackgroundSubtractor(train_len, method):
         if keyboard == 'q' or keyboard == 27:
             break
 
-if __name__ == "__main__":
+def run():
     path_video = "data/vdo.avi"
     vidcap = cv2.VideoCapture(path_video)
     frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
