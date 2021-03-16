@@ -72,7 +72,9 @@ def eval(vidcap, mean, std, params, saveResults=False):
             seg_boxes = draw_boxes(image=seg_boxes, boxes=gt_bboxes, color='g', linewidth=3)
 
             cv2.imshow("Segmentation mask with detected boxes and gt", seg_boxes)
-            cv2.waitKey()
+            keyboard = cv2.waitKey(30)
+            if keyboard == 'q' or keyboard == 27:
+                break
 
         frame_id += 1
 
@@ -90,7 +92,7 @@ if __name__ == '__main__':
         'bg_est': 'static',
         'alpha': 3,
         'rho': 0.021,
-        'show_boxes': False
+        'show_boxes': True
     }
 
     vidcap = cv2.VideoCapture(params['video_path'])
