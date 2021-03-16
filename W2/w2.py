@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 import argparse
 from task1 import run as t1_run
 from task2 import run as t2_run
@@ -52,10 +53,10 @@ if __name__ == '__main__':
     if args.t1:
         print('Executing task 1')
 
-        alphas = [1, 3, 4]
+        alphas = np.linspace(0, 10, 21)
         for alpha in alphas:
-            prec, rec, ap = t1_run(args, alpha=alpha)
-            print(alpha, ap)
+            rec, prec, ap = t1_run(args, alpha=alpha)
+            print(f'alpha: {alpha}, ap: {ap}')
 
     if args.t2:
         print('Executing task 2')

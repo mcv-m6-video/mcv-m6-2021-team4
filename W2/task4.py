@@ -34,9 +34,7 @@ def run(args, bg_est='static', alpha=3, rho=0.05, color_space='RGB', voting='sim
     print("Test frames: ", test_len)
 
     # Train
-    mean, std = train(vidcap, frame_size, train_len, params, saveResults=False)
+    mean, std = train(vidcap, frame_size, train_len, params)
 
     # Evaluate
-    eval(vidcap, frame_size, mean, std, params, saveResults=False)
-
-    return
+    return eval(vidcap, frame_size, mean, std, params)

@@ -147,9 +147,8 @@ def eval(vidcap, frame_size, mean, std, params):
     detections = temporal_filter(group_by_frame(detections), init=init_frame, end=frame_id)
 
     rec, prec, ap = voc_evaluation.voc_eval(detections, annotations, ovthresh=0.5, use_confidence=False)
-    print(rec, prec, ap)
 
-    return
+    return rec, prec, ap
 
 def train(vidcap, frame_size, train_len, params):
     count = 0
