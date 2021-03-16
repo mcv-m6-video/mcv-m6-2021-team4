@@ -101,6 +101,7 @@ def eval(vidcap,frame_size, mean, std, params, saveResults=False):
 if __name__ == '__main__':
     params = {
         'video_path': "D:\\Ian\\UNI\\5_Master_CV\\M6\\Project\\Data\\AICity_data\\train\\S03\\c010\\vdo.avi",
+        'roi_path':'D:\\Ian\\UNI\\5_Master_CV\\M6\\Project\\Data\\AICity_data\\train\\S03\\c010\\roi.jpg',
         'gt_path': 'D:\\Ian\\UNI\\5_Master_CV\\M6\\Project\\Data\\ai_challenge_s03_c010-full_annotation.xml',
         'results_path': 'D:\\Ian\\UNI\\5_Master_CV\\M6\\Project\\week_2\\task4\\',
         'num_frames_eval': 3,
