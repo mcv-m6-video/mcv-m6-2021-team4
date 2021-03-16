@@ -1,7 +1,11 @@
 import numpy as np
 import cv2
 import sys
+
 sys.path.append(".//W1")
+
+from copy import deepcopy
+
 from bounding_box import BoundingBox
 
 
@@ -96,6 +100,61 @@ def postprocess_fg(seg):
     seg = cv2.morphologyEx(seg, cv2.MORPH_OPEN, kernel)
     return seg
 
+def intersection_over_areas(bboxA, bboxB):
+    # determine the (x, y)-coordinates of the intersection rectangle
+    xA = max(bboxA.xtl, bboxB.xtl)
+    yA = max(bboxA.ytl, bboxB.ytl)
+    xB = min(bboxA.xbr, bboxB.xbr)
+    yB = min(bboxA.ybr, bboxB.ybr)
+
+    # compute the area of intersection rectangle
+    interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
+
+    return interArea/bboxA.area, interArea/bboxB.area
+
+def discard_overlapping_bboxes(bboxes):
+    ioa_thr = 0.7
+    idxA = 0
+    tmp_bboxes = deepcopy(bboxes)
+    while idxA < len(bboxes)-1:
+        discard = []
+        discard_tmp = []
+        discardA = False
+
+        bboxA = bboxes[idxA]
+        del tmp_bboxes[0]
+
+        for idxB, bboxB in enumerate(tmp_bboxes):
+            ioaA, ioaB = intersection_over_areas(bboxA, bboxB)
+
+            if ioaA > ioa_thr or ioaB > ioa_thr:
+                if ioaA > ioaB:
+                    discardA = True
+                    if idxA not in discard:
+                        discard.append(idxA)
+                else:
+                    discard.append(idxA+idxB+1)
+                    discard_tmp.append(idxB)
+
+        discarded=0
+        for d in sorted(discard):
+            del bboxes[d-discarded]
+            discarded += 1
+
+        discarded_tmp = 0
+        for d in sorted(discard_tmp):
+            del tmp_bboxes[d-discarded_tmp]
+            discarded_tmp += 1
+
+        if not discardA:
+            idxA +=1
+
+        if len(tmp_bboxes) == 0:
+            break
+
+    return bboxes
+
+
 def fg_bboxes(seg, frame_id):
     bboxes = []
     contours, _ = cv2.findContours(seg.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -113,4 +172,5 @@ def fg_bboxes(seg, frame_id):
                                   ytl=y, xbr=x+w, ybr=y+h))
         idx += 1
 
-    return bboxes
+    return discard_overlapping_bboxes(bboxes)
+    # return bboxes
