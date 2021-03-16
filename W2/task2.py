@@ -35,6 +35,19 @@ def train(vidcap, train_len, results_path, saveResults=False):
     mean = mean
     std = np.sqrt(M2 / count)
 
+    # mean_f = open('data/mean_pickle', 'rb')
+    # mean_train_frames = pickle.load(mean_f)
+
+    # std_f = open('data/std_pickle', 'rb')
+    # std_train_frames = pickle.load(std_f)
+
+
+    # mean_pickle = open('mean_pickle','wb')
+    # pickle.dump(mean_train_frames, mean_pickle)
+
+    # std_pickle = open('std_pickle','wb')
+    # pickle.dump(std_train_frames, std_pickle)
+
     print("Mean and std computed")
 
     if saveResults:
@@ -72,8 +85,9 @@ def eval(vidcap, mean, std, params, saveResults=False):
             seg_boxes = draw_boxes(image=seg_boxes, boxes=gt_bboxes, color='g', linewidth=3)
 
             cv2.imshow("Segmentation mask with detected boxes and gt", seg_boxes)
-            cv2.waitKey()
-
+            keyboard = cv2.waitKey(30)
+            if keyboard == 'q' or keyboard == 27:
+                break
         frame_id += 1
 
     rec, prec, ap = voc_evaluation.voc_eval(detections, annotations, ovthresh=0.5, use_confidence=False)
@@ -88,9 +102,9 @@ if __name__ == '__main__':
         'results_path': './W2/output/',
         'num_frames_eval': 1606,
         'bg_est': 'static',
-        'alpha': 3,
+        'alpha': 4,
         'rho': 0.021,
-        'show_boxes': False
+        'show_boxes': True
     }
 
     vidcap = cv2.VideoCapture(params['video_path'])
