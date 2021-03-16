@@ -66,6 +66,7 @@ def train(vidcap, train_len, saveResults=False, usePickle=False):
         cv2.imwrite("./W2/output/mean_train_pickle.png", mean_train_frames)
         cv2.imwrite("./W2/output/std_train_pickle.png", std_train_frames)
 
+
         print("1", type(mean_train_frames))
         print(mean_train_frames)
         return mean_train_frames, std_train_frames
@@ -111,17 +112,20 @@ def eval(vidcap, mean_train_frames, std_train_frames, eval_num, saveResults=Fals
     annotations_grouped = aicity_reader.group_by_frame(annotations)
 
     for t in tqdm(range(eval_num)):
-        success,frame = vidcap.read()
+        _, frame = vidcap.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         segmentation = background_estimator(frame, alpha, mean_train_frames, std_train_frames)
         # segmentation = postprocess_after_segmentation(segmentation)
+
         bboxes = get_bboxes(segmentation,frame_num)
         bboxes_byframe = bboxes_byframe + bboxes
+
         frame_num += 1
 
 
         if saveResults:
+
             if not os.path.exists(f"./W2/output/{str(alpha)}"):
                 os.makedirs(f"./W2/output/{str(alpha)}")
             cv2.imwrite(f"./W2/output/{str(alpha)}/seg_{str(t)}_pp.bmp", segmentation.astype(int))
@@ -130,6 +134,7 @@ def eval(vidcap, mean_train_frames, std_train_frames, eval_num, saveResults=Fals
         # if True:
         #     frame = draw_boxes(frame, frame_id, grouped_det[frame_id], color='b', det=True)
         #     frame_iou = mean_iou(grouped_det[frame_id], grouped_gt[frame_id], sort=True)
+
 
 
 

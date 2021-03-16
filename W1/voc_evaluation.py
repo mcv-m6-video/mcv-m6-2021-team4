@@ -46,7 +46,7 @@ def voc_iou(BBGT,bb):
     return overlaps
 
 
-def voc_eval(detections, annotations, ovthresh=0.5, is_confidence=False):
+def voc_eval(detections, annotations, ovthresh=0.5, use_confidence=False):
     """
     rec, prec, ap = voc_eval(detections,
                                 annotations
@@ -55,7 +55,7 @@ def voc_eval(detections, annotations, ovthresh=0.5, is_confidence=False):
     Detections
     Annotations: GROUPED BY FRAME
     ovthresh: Overlap threshold (default = 0.5)
-    """
+     """
     # read annotations
     class_recs = {}
     npos = 0
@@ -67,11 +67,11 @@ def voc_eval(detections, annotations, ovthresh=0.5, is_confidence=False):
         class_recs[frame_id] = {"bbox": bbox, "det": det}
  
     # read detections
-    
+
     image_ids = [x.frame for x in detections]
     BB = np.array([x.box for x in detections]).reshape(-1, 4)
 
-    if is_confidence:
+    if use_confidence:
         confidence = np.array([float(x.confidence) for x in detections])
         # sort by confidence
         sorted_ind = np.argsort(-confidence)

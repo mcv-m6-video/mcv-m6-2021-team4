@@ -7,11 +7,10 @@ from utils import draw_boxes
 
 def task1_1(paths, show, noise_params):
 
-    gt = read_annotations(paths['gt'])
-    det = read_detections(paths['det'])
+    gt = read_annotations(paths['gt'], grouped=False, use_parked=True)
+    det = read_detections(paths['det'], grouped=True)
 
     grouped_gt = group_by_frame(gt)
-    grouped_det = group_by_frame(det)
 
     # if we want to replicate results
     # np.random.seed(10)
@@ -28,13 +27,13 @@ def task1_1(paths, show, noise_params):
         _, frame = cap.read()
 
         if show['gt']:
-            frame = draw_boxes(frame, frame_id, grouped_gt[frame_id], color='g')
+            frame = draw_boxes(frame, grouped_gt[frame_id], color='g')
 
         if show['det']:
-            frame = draw_boxes(frame, frame_id, grouped_det[frame_id], color='b', det=True)
+            frame = draw_boxes(frame, det[frame_id], color='b', det=True)
 
         if show['noisy']:
-            frame = draw_boxes(frame, frame_id, grouped_noisy_gt[frame_id], color='r')
+            frame = draw_boxes(frame, grouped_noisy_gt[frame_id], color='r')
 
         cv2.imshow('frame', frame)
         if cv2.waitKey() == 113:  # press q to quit
@@ -48,12 +47,10 @@ def task1_1(paths, show, noise_params):
 
 
 def task1_2(paths, ap=0.5):
-    gt = read_annotations(paths['gt'])
+    gt = read_annotations(paths['gt'], grouped=True, use_parked=True)
     det = read_detections(paths['det'])
 
-    grouped_gt = group_by_frame(gt)
-
-    rec, prec, ap = voc_eval(det, grouped_gt, ap, is_confidence=True)
+    rec, prec, ap = voc_eval(det, gt, ap, use_confidence=True)
     print(ap)
 
     return
@@ -63,7 +60,7 @@ def run():
     paths = {
         'gt': '../data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml',
         'det': '../data/AICity_data/train/S03/c010/det/det_yolo3.txt',
-        'video': '../data/AICity_data/train/S03/c010/vdo.avi'
+        'video': '../data/vdo.avi'
     }
 
     show = {
