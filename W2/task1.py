@@ -1,4 +1,5 @@
 import glob
+import os
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -65,6 +66,7 @@ def train(vidcap, train_len, saveResults=False, usePickle=False):
         cv2.imwrite("./W2/output/mean_train_pickle.png", mean_train_frames)
         cv2.imwrite("./W2/output/std_train_pickle.png", std_train_frames)
 
+
         print("1", type(mean_train_frames))
         print(mean_train_frames)
         return mean_train_frames, std_train_frames
@@ -86,11 +88,11 @@ def train(vidcap, train_len, saveResults=False, usePickle=False):
         std_train_frames= np.std(img_list,axis=0) 
         print("Std computed")
 
-        '''mean_pickle = open('mean_pickle','wb')
+        mean_pickle = open('mean_pickle','wb')
         pickle.dump(mean_train_frames, mean_pickle)
 
         std_pickle = open('std_pickle','wb')
-        pickle.dump(std_train_frames, std_pickle)'''
+        pickle.dump(std_train_frames, std_pickle)
 
         if saveResults:
             cv2.imwrite("./W2/output/mean_train.png", mean_train_frames)
@@ -101,7 +103,7 @@ def train(vidcap, train_len, saveResults=False, usePickle=False):
 
 def eval(vidcap, mean_train_frames, std_train_frames, eval_num, saveResults=False):
     frame_num = train_len
-    alpha = 4
+    alpha = 3
     img_list_processed = []
     bboxes_byframe = []
 
@@ -110,21 +112,29 @@ def eval(vidcap, mean_train_frames, std_train_frames, eval_num, saveResults=Fals
     annotations_grouped = aicity_reader.group_by_frame(annotations)
 
     for t in tqdm(range(eval_num)):
-        success,frame = vidcap.read()
+        _, frame = vidcap.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         segmentation = background_estimator(frame, alpha, mean_train_frames, std_train_frames)
         # segmentation = postprocess_after_segmentation(segmentation)
+
         bboxes = get_bboxes(segmentation,frame_num)
         bboxes_byframe = bboxes_byframe + bboxes
+
         frame_num += 1
+
+
         if saveResults:
-            cv2.imwrite(f"./W2/output/seg_{str(t)}_pp_{str(alpha)}.bmp", segmentation.astype(int))
+
+            if not os.path.exists(f"./W2/output/{str(alpha)}"):
+                os.makedirs(f"./W2/output/{str(alpha)}")
+            cv2.imwrite(f"./W2/output/{str(alpha)}/seg_{str(t)}_pp.bmp", segmentation.astype(int))
 
         
         # if True:
         #     frame = draw_boxes(frame, frame_id, grouped_det[frame_id], color='b', det=True)
         #     frame_iou = mean_iou(grouped_det[frame_id], grouped_gt[frame_id], sort=True)
+
 
 
 
@@ -147,7 +157,7 @@ if __name__ == '__main__':
     print("Test frames: ", test_len)
 
     #Train
-    mean_train_frames, std_train_frames = train(vidcap, train_len, saveResults=False, usePickle=True)
+    mean_train_frames, std_train_frames = train(vidcap, train_len, saveResults=False, usePickle=False)
 
     #Evaluate
-    eval(vidcap, mean_train_frames, std_train_frames, 2, saveResults=False)
+    eval(vidcap, mean_train_frames, std_train_frames, test_len, saveResults=True)
