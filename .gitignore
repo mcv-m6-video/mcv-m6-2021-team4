@@ -2,6 +2,7 @@
 .idea/*
 __pycache__/
 W1/results
+W2/.idea/*
 data/vdo.avi
 data/AICity_data
 output
