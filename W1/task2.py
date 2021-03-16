@@ -1,7 +1,7 @@
 import cv2
 import matplotlib.pyplot as plt
 from noise_generator import add_noise
-from utils import draw_boxes
+from utils import draw_boxes, save_gif
 import numpy as np
 from aicity_reader import read_annotations, read_detections, group_by_frame
 from voc_evaluation import voc_iou
@@ -84,16 +84,6 @@ def task2(gt_path, det_path, video_path, results_path):
     # cv2.destroyAllWindows()
 
     return
-
-
-def save_gif(source_path, results_path):
-    # Build GIF
-
-    with imageio.get_writer(results_path, mode='I') as writer:
-        for filename in sorted(os.listdir(source_path)):
-            image = imageio.imread(source_path + filename)
-            writer.append_data(image)
-
 
 def plot_iou(dict_iou, xmax):
     lists = sorted(dict_iou.items())  # sorted by key, return a list of tuples
