@@ -31,14 +31,17 @@ def BackgroundSubtractor(train_len, method):
         # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         fgMask = backSub.apply(frame)
-        bboxes = task1.get_bboxes(fgMask,t)
-        for bb in bboxes:
-            cv2.rectangle(fgMask,(bb.xtl,bb.ytl),(bb.xbr,bb.ybr),(0,255,0),2)
+        det_bboxes = task1.get_bboxes(fgMask,t)
+        fgMask = cv2.cvtColor(fgMask.astype(np.uint8), cv2.COLOR_GRAY2RGB)
+        seg_boxes = draw_boxes(image=fgMask, boxes=det_bboxes, color='r', linewidth=3)
+        # seg_boxes = draw_boxes(image=seg_boxes, boxes=gt_bboxes, color='g', linewidth=3)
 
-        cv2.rectangle(fgMask, (10, 2), (120,20), (255,255,255), -1)
-        cv2.putText(frame, method+" - "+str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
-        cv2.imshow('Frame', frame)
-        cv2.imshow('FG Mask', fgMask)
+        # cv2.rectangle(fgMask, (10, 2), (120,20), (255,255,255), -1)
+        # cv2.putText(frame, method+" - "+str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
+        # cv2.imshow('Frame', frame)
+        # cv2.imshow('FG Mask', fgMask)
+
+        cv2.imshow("Segmentation mask with detected boxes and gt", seg_boxes)
 
         keyboard = cv2.waitKey(30)
         if keyboard == 'q' or keyboard == 27:
@@ -57,9 +60,9 @@ if __name__ == "__main__":
     print("Test frames: ", test_len)
 
     BackgroundSubtractor(train_len, 'MOG')
-    # BackgroundSubtractor(train_len, 'MOG2')
-    # BackgroundSubtractor(train_len, 'LSBP')
-    # BackgroundSubtractor(train_len, 'KNN')
+    BackgroundSubtractor(train_len, 'MOG2')
+    BackgroundSubtractor(train_len, 'LSBP')
+    BackgroundSubtractor(train_len, 'KNN')
 
 
     # #Train
