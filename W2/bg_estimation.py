@@ -49,7 +49,10 @@ def static_bg_est(image,frame_size, mean, std, params):
     h,w = frame_size
     segmentation = np.zeros((h, w))
     mask = abs(image - mean) >= alpha * (std + 2)
+
     roi = cv2.imread(params['roi_path'],cv2.IMREAD_GRAYSCALE)/255
+    #_,roi = cv2.threshold(roi,127,255,cv2.THRESH_BINARY)
+
     nc = color_space[params['color_space']][1]
     if nc == 1:
         segmentation[mask] = 255
@@ -70,7 +73,10 @@ def adaptive_bg_est(image,frame_size, mean, std, params):
     rho = params['rho']
     h,w = frame_size
     mask = abs(image - mean) >= alpha * (std + 2)
+
     roi = cv2.imread(params['roi_path'],cv2.IMREAD_GRAYSCALE)/255
+    #_,roi = cv2.threshold(roi,127,255,cv2.THRESH_BINARY)
+
     segmentation = np.zeros((h, w))
     nc = color_space[params['color_space']][1]
     
