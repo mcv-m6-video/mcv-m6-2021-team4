@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import sys
 
-sys.path.append(".//W1")
+sys.path.append("W1")
 
 from copy import deepcopy
 
@@ -49,8 +49,10 @@ def static_bg_est(image,frame_size, mean, std, params):
     h,w = frame_size
     segmentation = np.zeros((h, w))
     mask = abs(image - mean) >= alpha * (std + 2)
-    roi = cv2.imread(params['roi_path'],cv2.IMREAD_GRAYSCALE)
-    _,roi = cv2.threshold(roi,127,255,cv2.THRESH_BINARY)
+
+    roi = cv2.imread(params['roi_path'],cv2.IMREAD_GRAYSCALE)/255
+    #_,roi = cv2.threshold(roi,127,255,cv2.THRESH_BINARY)
+
     nc = color_space[params['color_space']][1]
     if nc == 1:
         segmentation[mask] = 255
@@ -71,8 +73,10 @@ def adaptive_bg_est(image,frame_size, mean, std, params):
     rho = params['rho']
     h,w = frame_size
     mask = abs(image - mean) >= alpha * (std + 2)
-    roi = cv2.imread(params['roi_path'],cv2.IMREAD_GRAYSCALE)
-    _,roi = cv2.threshold(roi,127,255,cv2.THRESH_BINARY)
+
+    roi = cv2.imread(params['roi_path'],cv2.IMREAD_GRAYSCALE)/255
+    #_,roi = cv2.threshold(roi,127,255,cv2.THRESH_BINARY)
+
     segmentation = np.zeros((h, w))
     nc = color_space[params['color_space']][1]
     
@@ -87,20 +91,26 @@ def adaptive_bg_est(image,frame_size, mean, std, params):
             raise ValueError('Voting method does not exist')
         
         segmentation[voting] = 255
-        mask = voting
+        
     # provar d'actualitzar el bg cada X frames
     mean = np.where(mask, mean, rho * image + (1-rho) * mean)
     std = np.where(mask, std, np.sqrt(rho * (image-mean)**2 + (1-rho) * std**2))
 
     return segmentation*roi, mean, std
-
+  
 
 def postprocess_fg(seg):
+
     kernel = np.ones((2, 2), np.uint8)
-    # seg = cv2.erode(seg, kernel, iterations=1)
-    # seg = cv2.dilate(seg, kernel, iterations=1)
-    seg = cv2.morphologyEx(seg, cv2.MORPH_OPEN, kernel)
+    seg = cv2.erode(seg, kernel, iterations=1)
+    kernel = np.ones((3,4), np.uint8)
+    seg = cv2.dilate(seg, kernel, iterations=1)
+
+    seg = cv2.morphologyEx(seg, cv2.MORPH_OPEN, np.ones((7, 4), np.uint8))
+    seg = cv2.morphologyEx(seg, cv2.MORPH_CLOSE, np.ones((4, 7), np.uint8))
+
     return seg
+
 
 def intersection_over_areas(bboxA, bboxB):
     # determine the (x, y)-coordinates of the intersection rectangle
@@ -164,7 +174,7 @@ def fg_bboxes(seg, frame_id):
     idx = 0
     for c in contours:
         rect = cv2.boundingRect(c)
-        if rect[2] < 50 or rect[3] < 50:
+        if rect[2] < 50 or rect[3] < 50 or rect[2]/rect[3] < 0.8::
             continue  # Discard small contours
 
         x, y, w, h = rect

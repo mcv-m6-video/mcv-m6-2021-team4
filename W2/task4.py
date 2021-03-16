@@ -7,7 +7,7 @@ sys.path.append("..//W1")
 import voc_evaluation
 from aicity_reader import read_annotations, read_detections, group_by_frame
 from utils import draw_boxes
-from bg_estimation import static_bg_est, adaptive_bg_est, postprocess_fg, fg_bboxes,static_bg_est
+from bg_estimation import static_bg_est, adaptive_bg_est,postprocess, postprocess_fg, fg_bboxes,static_bg_est
 
 
 
@@ -68,7 +68,7 @@ def eval(vidcap,frame_size, mean, std, params, saveResults=False):
         frame = cv2.cvtColor(frame, color_space[params['color_space']][0])
 
         segmentation, mean, std = bg_est_method[params['bg_est']](frame,frame_size, mean, std, params)
-        segmentation = postprocess_fg(segmentation)
+        segmentation = postprocess(segmentation)
 
         if saveResults:
             cv2.imwrite(params['results_path'] + f"seg_{str(frame_id)}_pp_{str(params['alpha'])}.bmp", segmentation.astype(int))
@@ -109,7 +109,7 @@ if __name__ == '__main__':
         'alpha': 3,
         'rho': 0.021,
         'show_boxes': False,
-        'color_space': 'RGB',
+        'color_space': 'grayscale',
         'voting': 'simple' #simple, unanimous
     }
 
