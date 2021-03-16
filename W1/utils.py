@@ -25,3 +25,11 @@ def draw_boxes(image, boxes, color='g', linewidth=2, det=False):
         if det:
             cv2.putText(image, str(box.confidence), (int(box.xtl), int(box.ytl) - 5), cv2.FONT_ITALIC, 0.6, rgb, linewidth)
     return image
+
+def save_gif(source_path, results_path):
+    # Build GIF
+
+    with imageio.get_writer(results_path, mode='I') as writer:
+        for filename in sorted(os.listdir(source_path)):
+            image = imageio.imread(source_path + filename)
+            writer.append_data(image)

@@ -70,3 +70,24 @@ class BoundingBox:
             self.ybr = h - 1
 
         return
+
+
+def intersection_bboxes(bboxA, bboxB):
+    # determine the (x, y)-coordinates of the intersection rectangle
+    xA = max(bboxA.xtl, bboxB.xtl)
+    yA = max(bboxA.ytl, bboxB.ytl)
+    xB = min(bboxA.xbr, bboxB.xbr)
+    yB = min(bboxA.ybr, bboxB.ybr)
+    # return the area of intersection rectangle
+    return max(0, xB - xA) * max(0, yB - yA)
+
+
+def intersection_over_union(bboxA, bboxB):
+    interArea = intersection_bboxes(bboxA, bboxB)
+    iou = interArea / float(bboxA.area + bboxB.area - interArea)
+    return iou
+
+
+def intersection_over_areas(bboxA, bboxB):
+    interArea = intersection_bboxes(bboxA, bboxB)
+    return interArea / bboxA.area, interArea / bboxB.area
