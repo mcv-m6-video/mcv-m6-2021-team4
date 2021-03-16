@@ -33,3 +33,25 @@ def save_gif(source_path, results_path):
         for filename in sorted(os.listdir(source_path)):
             image = imageio.imread(source_path + filename)
             writer.append_data(image)
+
+
+def plot_3D(results_path):
+    maps=[]
+    for i in x:
+        map_alfa = []
+        for j in y:
+            z = uniform(0.0,1) 
+            map_alfa.append(z)
+        maps.append(map_alfa)
+    X, Y = np.meshgrid(x, y)
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    surf = ax.plot_surface(X, Y, np.array(maps),cmap='viridis', edgecolor='none')
+    ax.set_xlabel('Alpha')
+    ax.set_ylabel('Rho')
+    ax.set_zlabel('mAP')
+    # Add a color bar which maps values to colors.
+    ax.view_init(45, 35)
+    fig.colorbar(surf, shrink=0.5, aspect=5)
+    plt.savefig(results_path+"grid_search.png")
+    plt.show()
