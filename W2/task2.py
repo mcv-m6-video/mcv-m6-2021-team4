@@ -68,7 +68,7 @@ def eval(vidcap, mean, std, params, saveResults=False):
 
         if params['show_boxes']:
             seg = cv2.cvtColor(segmentation.astype(np.uint8), cv2.COLOR_GRAY2RGB)
-            seg_boxes = draw_boxes(image=seg, boxes=det_bboxes, color='b', linewidth=3)
+            seg_boxes = draw_boxes(image=seg, boxes=det_bboxes, color='r', linewidth=3)
             seg_boxes = draw_boxes(image=seg_boxes, boxes=gt_bboxes, color='g', linewidth=3)
 
             cv2.imshow("Segmentation mask with detected boxes and gt", seg_boxes)
@@ -86,11 +86,11 @@ if __name__ == '__main__':
         'video_path': "./data/vdo.avi",
         'gt_path': './data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml',
         'results_path': './W2/output/',
-        'num_frames_eval': 3,
+        'num_frames_eval': 1606,
         'bg_est': 'static',
         'alpha': 3,
         'rho': 0.021,
-        'show_boxes': True
+        'show_boxes': False
     }
 
     vidcap = cv2.VideoCapture(params['video_path'])
