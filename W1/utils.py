@@ -18,10 +18,10 @@ colors = {
 }
 
 
-def draw_boxes(image, frame_id, boxes, color='g', det=False):
+def draw_boxes(image, boxes, color='g', linewidth=2, det=False):
     rgb = colors[color]
     for box in boxes:
-        image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), rgb, 2)
+        image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), rgb, linewidth)
         if det:
-            cv2.putText(image, str(box.confidence), (int(box.xtl), int(box.ytl) - 5), cv2.FONT_ITALIC, 0.6, rgb, 2)
+            cv2.putText(image, str(box.confidence), (int(box.xtl), int(box.ytl) - 5), cv2.FONT_ITALIC, 0.6, rgb, linewidth)
     return image

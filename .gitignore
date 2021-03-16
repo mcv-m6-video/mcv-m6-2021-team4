@@ -1,8 +1,7 @@
 .vscode/*
 .idea/*
 __pycache__/
-results/plot_frames/*
-results/video_frames/*
+W1/results
 data/vdo.avi
 data/AICity_data
 output

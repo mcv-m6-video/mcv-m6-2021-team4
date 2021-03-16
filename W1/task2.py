@@ -16,20 +16,16 @@ def task2(gt_path, det_path, video_path, results_path):
     print(plot_frames_path)
 
     # If folder doesn't exist -> create it
-    if not os.path.exists(plot_frames_path):
-        os.makedirs(plot_frames_path)
-
-    if not os.path.exists(video_frames_path):
-        os.makedirs(video_frames_path)
+    os.makedirs(plot_frames_path, exist_ok=True)
+    os.makedirs(video_frames_path, exist_ok=True)
 
     show_det = True
     show_noisy = False
 
-    gt = read_annotations(gt_path)
-    det = read_detections(det_path)
+    gt = read_annotations(gt_path, grouped=False, use_parked=True)
+    det = read_detections(det_path, grouped=True)
 
     grouped_gt = group_by_frame(gt)
-    grouped_det = group_by_frame(det)
 
     noise_params = {
         'add': False,
@@ -56,14 +52,14 @@ def task2(gt_path, det_path, video_path, results_path):
     for frame_id in range(20):
         _, frame = cap.read()
 
-        frame = draw_boxes(frame, frame_id, grouped_gt[frame_id], color='g')
+        frame = draw_boxes(frame, grouped_gt[frame_id], color='g')
 
         if show_det:
-            frame = draw_boxes(frame, frame_id, grouped_det[frame_id], color='b', det=True)
-            frame_iou = mean_iou(grouped_det[frame_id], grouped_gt[frame_id], sort=True)
+            frame = draw_boxes(frame, det[frame_id], color='b', det=True)
+            frame_iou = mean_iou(det[frame_id], grouped_gt[frame_id], sort=True)
 
         if show_noisy:
-            frame = draw_boxes(frame, frame_id, grouped_noisy_gt[frame_id], color='r')
+            frame = draw_boxes(frame, grouped_noisy_gt[frame_id], color='r')
             frame_iou = mean_iou(grouped_noisy_gt[frame_id], grouped_gt[frame_id])
 
         iou_list[frame_id] = frame_iou
@@ -157,6 +153,6 @@ def sort_by_confidence(det):
 def run():
     gt_path = '../data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml'
     det_path = '../data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt'
-    video_path = '../data/AICity_data/train/S03/c010/vdo.avi'
+    video_path = '../data/vdo.avi'
 
-    task2(gt_path, det_path, video_path=video_path, results_path='../results')
+    task2(gt_path, det_path, video_path=video_path, results_path='./results')

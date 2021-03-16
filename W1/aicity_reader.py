@@ -2,6 +2,12 @@ import xmltodict
 from bounding_box import BoundingBox
 from collections import defaultdict, OrderedDict
 
+def group_by_frame(boxes):
+    grouped = defaultdict(list)
+    for box in boxes:
+        grouped[box.frame].append(box)
+    return OrderedDict(sorted(grouped.items()))
+
 def read_annotations(path, grouped=True, use_parked=False):
     with open(path) as f:
         tracks = xmltodict.parse(f.read())['annotations']['track']
@@ -37,7 +43,7 @@ def read_annotations(path, grouped=True, use_parked=False):
     return annotations
 
 
-def read_detections(path):
+def read_detections(path, grouped=False):
     """
     Format: <frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z>
     """
@@ -59,11 +65,7 @@ def read_detections(path):
             confidence=float(det[6])
         ))
 
+    if grouped:
+        return group_by_frame(detections)
+
     return detections
-
-
-def group_by_frame(boxes):
-    grouped = defaultdict(list)
-    for box in boxes:
-        grouped[box.frame].append(box)
-    return OrderedDict(sorted(grouped.items()))
