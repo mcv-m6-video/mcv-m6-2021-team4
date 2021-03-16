@@ -14,17 +14,21 @@ from aicity_reader import read_annotations
 from bg_estimation import static_bg_est, adaptive_bg_est, postprocess_fg, fg_bboxes, temporal_filter
 
 
-def train(vidcap, train_len, backSub):
+def train_sota(vidcap, train_len, backSub):
     print("Training SOTA")
     for t in tqdm(range(train_len)):
         #update the background model
         _ ,frame = vidcap.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         segmentation = backSub.apply(frame)
+        segmentation[segmentation<200] = 0
+        # print(segmentation.shape)
+        # print(np.unique(segmentation))
+        # break
     
     return backSub #return backSub updated
 
-def eval(vidcap, test_len, backSub):
+def eval_sota(vidcap, test_len, backSub, showResults=True):
     print("Evaluating SOTA")  
     gt = read_annotations('./data/ai_challenge_s03_c010-full_annotation.xml', grouped=True, use_parked=False)
     frame_id = int(vidcap.get(cv2.CAP_PROP_POS_FRAMES))
@@ -33,11 +37,12 @@ def eval(vidcap, test_len, backSub):
     annotations = {}
 
     for t in tqdm(range(test_len)):
-        print(frame_id)
+
         _ ,frame = vidcap.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         segmentation = backSub.apply(frame)
+        segmentation[segmentation<200] = 0
         det_bboxes = fg_bboxes(segmentation,frame_id)
         detections += det_bboxes
 
@@ -48,14 +53,13 @@ def eval(vidcap, test_len, backSub):
             gt_bboxes = gt[frame_id]
         annotations[frame_id] = gt_bboxes
 
-        segmentation = draw_boxes(image=segmentation, boxes=gt_bboxes, color='g', linewidth=3)
-
-        cv2.rectangle(frame, (10, 2), (120,20), (255,255,255), -1)
-        cv2.putText(frame, method+" - "+str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
-           
-        segmentation = draw_boxes(image=segmentation, boxes=det_bboxes, color='r', linewidth=3)
-        cv2.imshow("Segmentation mask with detected boxes and gt", segmentation)
-        cv2.imshow('Frame', frame)
+        if showResults:
+            segmentation = draw_boxes(image=segmentation, boxes=gt_bboxes, color='g', linewidth=3)
+            cv2.rectangle(frame, (10, 2), (120,20), (255,255,255), -1)
+            cv2.putText(frame, method+" - "+str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
+            segmentation = draw_boxes(image=segmentation, boxes=det_bboxes, color='r', linewidth=3)
+            cv2.imshow("Segmentation mask with detected boxes and gt", segmentation)
+            cv2.imshow('Frame', frame)
 
         keyboard = cv2.waitKey(30)
         if keyboard == 'q' or keyboard == 27:
@@ -82,11 +86,11 @@ if __name__ == "__main__":
     print("Train frames: ", train_len)
     print("Test frames: ", test_len)
 
-    method = 'MOG'
+    method = 'MOG2'
     if method == 'MOG':
         backSub = cv2.bgsegm.createBackgroundSubtractorMOG()
     elif method == 'MOG2':
-        backSub = cv2.createBackgroundSubtractorMOG2()
+        backSub = cv2.createBackgroundSubtractorMOG2(history=500,varThreshold=16,detectShadows=True)
     elif method == 'LSBP':
         backSub = cv2.bgsegm.createBackgroundSubtractorLSBP()
     elif method == 'KNN':
@@ -95,13 +99,9 @@ if __name__ == "__main__":
     print("Background Substractor Method: ", method)
 
 
-    backSub = train(vidcap, train_len, backSub)
-    backSub = eval(vidcap, test_len, backSub)
+    backSub = train_sota(vidcap, train_len, backSub)
+    backSub = eval_sota(vidcap, test_len, backSub)
 
-    # BackgroundSubtractor(vidcap, frame_count-1, 'MOG')
-    # BackgroundSubtractor(train_len, 'MOG2')
-    # BackgroundSubtractor(train_len, 'LSBP')
-    # BackgroundSubtractor(train_len, 'KNN')
 
 
     # #Train
