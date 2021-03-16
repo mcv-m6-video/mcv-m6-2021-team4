@@ -41,7 +41,6 @@ def static_bg_est(image, frame_size, mean, std, params):
 
     return segmentation * roi, mean, std
 
-
 def adaptive_bg_est(image, frame_size, mean, std, params):
     alpha = params['alpha']
     rho = params['rho']
@@ -71,7 +70,6 @@ def adaptive_bg_est(image, frame_size, mean, std, params):
     std = np.where(mask, std, np.sqrt(rho * (image - mean) ** 2 + (1 - rho) * std ** 2))
 
     return segmentation * roi, mean, std
-
 
 def static_bg_est_old(image, mean, std, params):
     alpha = params['alpha']
@@ -244,7 +242,6 @@ def discard_overlapping_bboxes(bboxes):
             break
 
     return bboxes
-
 
 def fg_bboxes(seg, frame_id):
     bboxes = []
