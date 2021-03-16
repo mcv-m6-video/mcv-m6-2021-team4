@@ -29,24 +29,114 @@ def adaptive_bg_est(image, mean, std, params):
 
     return segmentation, mean, std
 
-def postprocess_fg(seg):
-    kernel = np.ones((2, 2), np.uint8)
-    # seg = cv2.erode(seg, kernel, iterations=1)
-    # seg = cv2.dilate(seg, kernel, iterations=1)
-    seg = cv2.morphologyEx(seg, cv2.MORPH_OPEN, kernel)
-    return seg
-
-def intersection_over_areas(bboxA, bboxB):
+def intersection_bboxes(bboxA, bboxB):
     # determine the (x, y)-coordinates of the intersection rectangle
     xA = max(bboxA.xtl, bboxB.xtl)
     yA = max(bboxA.ytl, bboxB.ytl)
     xB = min(bboxA.xbr, bboxB.xbr)
     yB = min(bboxA.ybr, bboxB.ybr)
+    # return the area of intersection rectangle
+    return max(0, xB - xA) * max(0, yB - yA)
 
-    # compute the area of intersection rectangle
-    interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
+def intersection_over_union(bboxA, bboxB):
+    interArea = intersection_bboxes(bboxA, bboxB)
+    iou = interArea / float(bboxA.area + bboxB.area - interArea)
+    return iou
 
+def intersection_over_areas(bboxA, bboxB):
+    interArea = intersection_bboxes(bboxA, bboxB)
     return interArea/bboxA.area, interArea/bboxB.area
+
+def temporal_filter(detections, init, end):
+    good_detections = []
+
+    if init in detections:
+        for d in detections[init]:
+            good_detections.append(d)
+
+    if end-1 in detections:
+        for d in detections[end-1]:
+            good_detections.append(d)
+
+    iou_thr = 0.6
+    for current_frame in range(init+1, end-1):
+        if current_frame not in detections:
+            continue
+        det_current = detections[current_frame]
+        det_prev = []
+        det_next = []
+        if current_frame-1 in detections:
+            det_prev = detections[current_frame-1]
+        if current_frame+1 in detections:
+            det_next = detections[current_frame+1]
+
+        for d_curr in det_current:
+            max_iou_prev = 0
+            max_iou_next = 0
+
+            for d_prev in det_prev:
+                iou_prev = intersection_over_union(d_curr, d_prev)
+                max_iou_prev = max(max_iou_prev, iou_prev)
+
+            for d_next in det_next:
+                iou_next = intersection_over_union(d_curr, d_next)
+                max_iou_next = max(max_iou_next, iou_next)
+
+            if max_iou_prev >= iou_thr or max_iou_next >= iou_thr:
+                good_detections.append(d_curr)
+
+    return good_detections
+
+def postprocess_fg(seg):
+
+    kernel = np.ones((2, 2), np.uint8)
+    seg = cv2.erode(seg, kernel, iterations=1)
+    kernel = np.ones((3,4), np.uint8)
+    seg = cv2.dilate(seg, kernel, iterations=1)
+
+    seg = cv2.morphologyEx(seg, cv2.MORPH_OPEN, np.ones((7, 4), np.uint8))
+    seg = cv2.morphologyEx(seg, cv2.MORPH_CLOSE, np.ones((4, 7), np.uint8))
+
+    return seg
+
+def postprocess_fg_flood(seg):
+    kernel = np.ones((2, 2), np.uint8)
+    seg = cv2.erode(seg, kernel, iterations=1)
+    kernel = np.ones((3, 4), np.uint8)
+    seg = cv2.dilate(seg, kernel, iterations=1)
+
+    contours, _ = cv2.findContours(seg.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    output = np.zeros(shape=seg.shape)
+    cv2.drawContours(output, contours, contourIdx=-1, color=(255,255,255), thickness=2)
+    output = output.astype(np.uint8)
+
+    # Copy the thresholded image.
+    im_floodfill = output.copy()
+
+    # Mask used to flood filling.
+    # Notice the size needs to be 2 pixels than the image.
+    h, w = output.shape[:2]
+    mask = np.zeros((h + 2, w + 2), np.uint8)
+
+    # Floodfill from point (0, 0)
+    cv2.floodFill(im_floodfill, mask, (0, 0), 255, 8);
+
+    # Invert floodfilled image
+    im_floodfill_inv = cv2.bitwise_not(im_floodfill)
+
+    # Combine the two images to get the foreground.
+    im_out = output | im_floodfill_inv
+
+    # Display images.
+    # cv2.imshow("Thresholded Image", seg)
+    # cv2.imshow("Floodfilled Image", im_floodfill)
+    # cv2.imshow("Inverted Floodfilled Image", im_floodfill_inv)
+    # cv2.imshow("Foreground", im_out)
+    # cv2.imshow("Foreground2", im_out2)
+    # cv2.waitKey(0)
+
+    return im_out
 
 def discard_overlapping_bboxes(bboxes):
     ioa_thr = 0.7
@@ -95,10 +185,20 @@ def fg_bboxes(seg, frame_id):
     bboxes = []
     contours, _ = cv2.findContours(seg.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
+    output = np.zeros(shape=seg.shape)
+    cv2.drawContours(output, contours, contourIdx=-1, color=(255, 255, 255), thickness=2)
+    output = output.astype(np.uint8)
+
+    # cv2.imshow('seg', seg)
+    # cv2.imshow('contours', output)
+    # cv2.waitKey(0)
+
+    # AR, size
+
     idx = 0
     for c in contours:
         rect = cv2.boundingRect(c)
-        if rect[2] < 50 or rect[3] < 50:
+        if rect[2] < 50 or rect[3] < 50 or rect[2]/rect[3] < 0.8:
             continue  # Discard small contours
 
         x, y, w, h = rect

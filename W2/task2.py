@@ -7,7 +7,7 @@ sys.path.append("W1")
 import voc_evaluation
 from aicity_reader import read_annotations, read_detections, group_by_frame
 from utils import draw_boxes
-from bg_estimation import static_bg_est, adaptive_bg_est, postprocess_fg, fg_bboxes
+from bg_estimation import static_bg_est, adaptive_bg_est, postprocess_fg, fg_bboxes, temporal_filter
 
 h, w, nc = 1080, 1920, 1
 
@@ -45,7 +45,8 @@ def train(vidcap, train_len, results_path, saveResults=False):
 
 def eval(vidcap, mean, std, params, saveResults=False):
     gt = read_annotations(params['gt_path'], grouped=True, use_parked=False)
-    frame_id = int(vidcap.get(cv2.CAP_PROP_POS_FRAMES))
+    init_frame = int(vidcap.get(cv2.CAP_PROP_POS_FRAMES))
+    frame_id = init_frame
     detections = []
     annotations = {}
     for t in tqdm(range(params['num_frames_eval'])):
@@ -53,6 +54,7 @@ def eval(vidcap, mean, std, params, saveResults=False):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         segmentation, mean, std = bg_est_method[params['bg_est']](frame, mean, std, params)
+        segmentation = segmentation * cv2.imread('/home/oscar/workspace/master/modules/m6/project/mcv-m6-2021-team4/data/AICity_data/train/S03/c010/roi.jpg', cv2.IMREAD_GRAYSCALE) / 255
         segmentation = postprocess_fg(segmentation)
 
         if saveResults:
@@ -76,6 +78,8 @@ def eval(vidcap, mean, std, params, saveResults=False):
 
         frame_id += 1
 
+    detections = temporal_filter(group_by_frame(detections), init=init_frame, end=frame_id)
+
     rec, prec, ap = voc_evaluation.voc_eval(detections, annotations, ovthresh=0.5, use_confidence=False)
     print(rec, prec, ap)
 
@@ -87,7 +91,7 @@ if __name__ == '__main__':
         'gt_path': './data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml',
         'results_path': './W2/output/',
         'num_frames_eval': 1606,
-        'bg_est': 'static',
+        'bg_est': 'adaptive',
         'alpha': 3,
         'rho': 0.021,
         'show_boxes': False
