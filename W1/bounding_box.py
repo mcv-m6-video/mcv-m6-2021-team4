@@ -31,6 +31,7 @@ class BoundingBox:
     def height(self):
         return abs(self.ybr - self.ytl)
 
+    @property
     def area(self):
         return self.width * self.height
 
