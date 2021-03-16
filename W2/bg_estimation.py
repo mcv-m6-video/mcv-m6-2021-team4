@@ -93,17 +93,24 @@ def discard_overlapping_bboxes(bboxes):
 
 def fg_bboxes(seg, frame_id):
     bboxes = []
+    mask = cv2.imread(r'data\AICity_data\train\S03\c010\roi.jpg').astype(np.uint8)
+    mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+    # print(mask.unique)
+    # print(mask.shape)
+    # print(type(mask))
     contours, _ = cv2.findContours(seg.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     idx = 0
     for c in contours:
         rect = cv2.boundingRect(c)
-        if rect[2] < 50 or rect[3] < 50:
-            continue  # Discard small contours
+        if rect in mask[mask>240]
+        if (rect[2] < 50 or rect[3] < 50 ) or ( rect[2] > 500 or rect[3] > 500 ) :
+            continue  # Discard small contours and super big ones
+
+       
 
         x, y, w, h = rect
-
-        # TODO: pillar bicis a gt
+        
         bboxes.append(BoundingBox(id=idx, label='car', frame=frame_id, xtl=x,
                                   ytl=y, xbr=x+w, ybr=y+h))
         idx += 1

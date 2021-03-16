@@ -102,7 +102,7 @@ if __name__ == '__main__':
         'results_path': './W2/output/',
         'num_frames_eval': 1606,
         'bg_est': 'static',
-        'alpha': 4,
+        'alpha': 4.5,
         'rho': 0.021,
         'show_boxes': True
     }

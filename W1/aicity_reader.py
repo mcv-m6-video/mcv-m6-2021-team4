@@ -17,15 +17,29 @@ def read_annotations(path, grouped=True, use_parked=False):
         id = track['@id']
         label = track['@label']
 
-        if label != 'car':
-            continue
+        # if label != 'car':
+        #     continue
 
-        for box in track['box']:
-            is_parked = box['attribute']['#text'] == 'true'
-            if not use_parked and is_parked:
-                continue
+        if label == 'car':
+            for box in track['box']:
+                is_parked = box['attribute']['#text'] == 'true'
+                if not use_parked and is_parked:
+                    continue
 
-            annotations.append(BoundingBox(
+                annotations.append(BoundingBox(
+                    id=int(id),
+                    label=label,
+                    frame=int(box['@frame']),
+                    xtl=float(box['@xtl']),
+                    ytl=float(box['@ytl']),
+                    xbr=float(box['@xbr']),
+                    ybr=float(box['@ybr']),
+                    occluded=box['@occluded'] == '1',
+                    parked=is_parked
+                ))
+        elif label == 'bike':
+            for box in track['box']:
+                annotations.append(BoundingBox(
                 id=int(id),
                 label=label,
                 frame=int(box['@frame']),
@@ -33,9 +47,8 @@ def read_annotations(path, grouped=True, use_parked=False):
                 ytl=float(box['@ytl']),
                 xbr=float(box['@xbr']),
                 ybr=float(box['@ybr']),
-                occluded=box['@occluded'] == '1',
-                parked=is_parked
-            ))
+                occluded=box['@occluded'] == '1'
+                ))
 
     if grouped:
         return group_by_frame(annotations)
