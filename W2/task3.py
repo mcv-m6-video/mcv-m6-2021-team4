@@ -11,40 +11,38 @@ import bounding_box
 from utils import draw_boxes
 from bg_estimation import fg_bboxes
 from aicity_reader import read_annotations
+from bg_estimation import static_bg_est, adaptive_bg_est, postprocess_fg, fg_bboxes, temporal_filter
 
 
-def BackgroundSubtractor(vidcap, train_len, method):
+def train(vidcap, train_len, backSub):
+    print("Training SOTA")
+    for t in tqdm(range(train_len)):
+        #update the background model
+        _ ,frame = vidcap.read()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        segmentation = backSub.apply(frame)
+    
+    return backSub #return backSub updated
 
-    if method == 'MOG':
-        backSub = cv2.bgsegm.createBackgroundSubtractorMOG()
-    elif method == 'MOG2':
-        backSub = cv2.createBackgroundSubtractorMOG2()
-    elif method == 'LSBP':
-        backSub = cv2.bgsegm.createBackgroundSubtractorLSBP()
-    elif method == 'KNN':
-        backSub = cv2.createBackgroundSubtractorKNN(history=100, detectShadows=True)
-
-    print("Background Substractor Method: ", method)
-
+def eval(vidcap, test_len, backSub):
+    print("Evaluating SOTA")  
     gt = read_annotations('./data/ai_challenge_s03_c010-full_annotation.xml', grouped=True, use_parked=False)
     frame_id = int(vidcap.get(cv2.CAP_PROP_POS_FRAMES))
 
     detections = []
     annotations = {}
 
-    for t in tqdm(range(train_len)):
-
+    for t in tqdm(range(test_len)):
+        print(frame_id)
         _ ,frame = vidcap.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         segmentation = backSub.apply(frame)
-        det_bboxes = fg_bboxes(segmentation,t)
+        det_bboxes = fg_bboxes(segmentation,frame_id)
         detections += det_bboxes
 
         segmentation = cv2.cvtColor(segmentation.astype(np.uint8), cv2.COLOR_GRAY2RGB)
 
-        # if t >= 535:
-        # print(t)
         gt_bboxes = []
         if frame_id in gt:
             gt_bboxes = gt[frame_id]
@@ -70,7 +68,9 @@ def BackgroundSubtractor(vidcap, train_len, method):
     print("Precission: ", prec)
     print("AP: ", ap)
 
+
 if __name__ == "__main__":
+
     path_video = "data/vdo.avi"
     vidcap = cv2.VideoCapture(path_video)
     frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -82,7 +82,23 @@ if __name__ == "__main__":
     print("Train frames: ", train_len)
     print("Test frames: ", test_len)
 
-    BackgroundSubtractor(vidcap, frame_count-1, 'MOG')
+    method = 'MOG'
+    if method == 'MOG':
+        backSub = cv2.bgsegm.createBackgroundSubtractorMOG()
+    elif method == 'MOG2':
+        backSub = cv2.createBackgroundSubtractorMOG2()
+    elif method == 'LSBP':
+        backSub = cv2.bgsegm.createBackgroundSubtractorLSBP()
+    elif method == 'KNN':
+        backSub = cv2.createBackgroundSubtractorKNN(history=100, detectShadows=True)
+
+    print("Background Substractor Method: ", method)
+
+
+    backSub = train(vidcap, train_len, backSub)
+    backSub = eval(vidcap, test_len, backSub)
+
+    # BackgroundSubtractor(vidcap, frame_count-1, 'MOG')
     # BackgroundSubtractor(train_len, 'MOG2')
     # BackgroundSubtractor(train_len, 'LSBP')
     # BackgroundSubtractor(train_len, 'KNN')
