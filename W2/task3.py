@@ -9,12 +9,12 @@ import voc_evaluation
 import aicity_reader
 import bounding_box
 from utils import draw_boxes
-import task1
+from bg_estimation import fg_bboxes
+from aicity_reader import read_annotations
 
 
+def BackgroundSubtractor(vidcap, train_len, method):
 
-def BackgroundSubtractor(train_len, method):
-        
     if method == 'MOG':
         backSub = cv2.bgsegm.createBackgroundSubtractorMOG()
     elif method == 'MOG2':
@@ -26,26 +26,49 @@ def BackgroundSubtractor(train_len, method):
 
     print("Background Substractor Method: ", method)
 
+    gt = read_annotations('./data/ai_challenge_s03_c010-full_annotation.xml', grouped=True, use_parked=False)
+    frame_id = int(vidcap.get(cv2.CAP_PROP_POS_FRAMES))
+
+    detections = []
+    annotations = {}
+
     for t in tqdm(range(train_len)):
-        success,frame = vidcap.read()
-        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        fgMask = backSub.apply(frame)
-        det_bboxes = task1.get_bboxes(fgMask,t)
-        fgMask = cv2.cvtColor(fgMask.astype(np.uint8), cv2.COLOR_GRAY2RGB)
-        seg_boxes = draw_boxes(image=fgMask, boxes=det_bboxes, color='r', linewidth=3)
-        # seg_boxes = draw_boxes(image=seg_boxes, boxes=gt_bboxes, color='g', linewidth=3)
+        _ ,frame = vidcap.read()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # cv2.rectangle(fgMask, (10, 2), (120,20), (255,255,255), -1)
-        # cv2.putText(frame, method+" - "+str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
-        # cv2.imshow('Frame', frame)
-        # cv2.imshow('FG Mask', fgMask)
+        segmentation = backSub.apply(frame)
+        det_bboxes = fg_bboxes(segmentation,t)
+        detections += det_bboxes
 
-        cv2.imshow("Segmentation mask with detected boxes and gt", seg_boxes)
+        segmentation = cv2.cvtColor(segmentation.astype(np.uint8), cv2.COLOR_GRAY2RGB)
+
+        # if t >= 535:
+        # print(t)
+        gt_bboxes = []
+        if frame_id in gt:
+            gt_bboxes = gt[frame_id]
+        annotations[frame_id] = gt_bboxes
+
+        segmentation = draw_boxes(image=segmentation, boxes=gt_bboxes, color='g', linewidth=3)
+
+        cv2.rectangle(frame, (10, 2), (120,20), (255,255,255), -1)
+        cv2.putText(frame, method+" - "+str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
+           
+        segmentation = draw_boxes(image=segmentation, boxes=det_bboxes, color='r', linewidth=3)
+        cv2.imshow("Segmentation mask with detected boxes and gt", segmentation)
+        cv2.imshow('Frame', frame)
 
         keyboard = cv2.waitKey(30)
         if keyboard == 'q' or keyboard == 27:
             break
+
+        frame_id += 1
+
+    rec, prec, ap = voc_evaluation.voc_eval(detections, annotations, ovthresh=0.5, use_confidence=False)   
+    print("Recall: ", rec)
+    print("Precission: ", prec)
+    print("AP: ", ap)
 
 if __name__ == "__main__":
     path_video = "data/vdo.avi"
@@ -59,10 +82,10 @@ if __name__ == "__main__":
     print("Train frames: ", train_len)
     print("Test frames: ", test_len)
 
-    BackgroundSubtractor(train_len, 'MOG')
-    BackgroundSubtractor(train_len, 'MOG2')
-    BackgroundSubtractor(train_len, 'LSBP')
-    BackgroundSubtractor(train_len, 'KNN')
+    BackgroundSubtractor(vidcap, frame_count-1, 'MOG')
+    # BackgroundSubtractor(train_len, 'MOG2')
+    # BackgroundSubtractor(train_len, 'LSBP')
+    # BackgroundSubtractor(train_len, 'KNN')
 
 
     # #Train
