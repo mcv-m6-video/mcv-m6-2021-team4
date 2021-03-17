@@ -38,14 +38,14 @@ The goal of this project is to:
     
 * **Comparison with more complex models**
 
-## Task 1: Gaussian distribution and Evaluate
+#### Task 1: Gaussian distribution and Evaluate
 + One Gaussian function to model each background pixel
   + First 25% of the test sequence to model background
   + Mean and variance of pixels
  + Second 75% to segment the foreground and evaluate
 + Evaluate results
 
-## Task 2: Recursive Gaussian modeling. Evaluate and compare to non-recursive
+#### Task 2: Recursive Gaussian modeling. Evaluate and compare to non-recursive
 + Adaptive modelling
   + First 25% frames for training
   + Second 75% left background adapts
@@ -53,12 +53,12 @@ The goal of this project is to:
   + Non recursive search
   + Grid search
 
-## Task 3: Compare with state-of-the-art and Evaluation
+#### Task 3: Compare with state-of-the-art and Evaluation
 + P. KaewTraKulPong et.al. An improved adaptive background mixture model for real-time tracking with shadow detection. In Video-Based Surveillance Systems, 2002. Implementation: BackgroundSubtractorMOG (OpenCV)
 + Z. Zivkovic et.al. Efficient adaptive density estimation per image pixel for the task of background subtraction, Pattern Recognition Letters, 2005. Implementation: BackgroundSubtractorMOG2 (OpenCV)
 + L. Guo, et.al. Background subtraction using local svd binary pattern. CVPRW, 2016. Implementation: BackgroundSubtractorLSBP (OpenCV)
 + Zivkovic, Zoran & Van der Heijden, F.. (2006). Efficient adaptive density estimation per image pixel for the task of background subtraction. Pattern Recognition Letters. 27. 773-780. 10.1016/j.patrec.2005.11.005. 
 
-## Task 4: Color sequences
+#### Task 4: Color sequences
 + Update with support color sequences
 
