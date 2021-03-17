@@ -17,17 +17,13 @@ color_space = {
     'HSV': [cv2.COLOR_BGR2HSV,3],
     'LAB': [cv2.COLOR_BGR2LAB,3],
     'YUV': [cv2.COLOR_BGR2YUV,3],
-    'YCrCb': [cv2.COLOR_BGR2YCrCb,3]
+    'YCrCb': [cv2.COLOR_BGR2YCrCb,3],
+    'H': [cv2.COLOR_BGR2HSV,1],
+    'L': [cv2.COLOR_BGR2LAB,1],
+    'CrCb':[cv2.COLOR_BGR2YCrCb,2]
 }
 
-color_space = {
-    'grayscale':[cv2.COLOR_BGR2GRAY,1],
-    'RGB': [cv2.COLOR_BGR2RGB,3],
-    'HSV': [cv2.COLOR_BGR2HSV,3],
-    'LAB': [cv2.COLOR_BGR2LAB,3],
-    'YUV': [cv2.COLOR_BGR2YUV,3],
-    'YCrCb': [cv2.COLOR_BGR2YCrCb,3]
-}
+
 
 def static_bg_est(image, frame_size, mean, std, params):
     alpha = params['alpha']
@@ -114,7 +110,16 @@ def eval(vidcap, frame_size, mean, std, params):
     for t in tqdm(range(params['num_frames_eval'])):
         _, frame = vidcap.read()
         frame = cv2.cvtColor(frame, color_space[params['color_space']][0])
-
+        if params['color_space'] == 'H':
+            H,S,V = frame.split(frame)
+            frame=H
+        if params['color_space'] == 'L':
+            L,A,B = frame.split(frame)
+            frame=L
+        if params['color_space'] == 'CbCr':
+            Y,Cb,Cr= frame.split(frame)
+            frame=np.dstack((Cb,Cr))
+            
         segmentation, mean, std = bg_est_method[params['bg_est']](frame,frame_size, mean, std, params)
         roi = cv2.imread(params['roi_path'], cv2.IMREAD_GRAYSCALE) / 255
         segmentation = segmentation * roi
@@ -162,7 +167,15 @@ def train(vidcap, frame_size, train_len, params):
     for t in tqdm(range(train_len)):
         _, frame = vidcap.read()
         frame = cv2.cvtColor(frame, color_space[params['color_space']][0])
-
+        if params['color_space'] == 'H':
+            H,S,V = frame.split(frame)
+            frame=H
+        if params['color_space'] == 'L':
+            L,A,B = frame.split(frame)
+            frame=L
+        if params['color_space'] == 'CbCr':
+            Y,Cb,Cr= frame.split(frame)
+            frame=np.dstack((Cb,Cr))
         count += 1
         delta = frame - mean
         mean += delta / count
