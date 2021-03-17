@@ -228,6 +228,7 @@ def eval_sota(vidcap, test_len, backSub, params):
             gt_bboxes = gt[frame_id]
         annotations[frame_id] = gt_bboxes
 
+        text_bboxes = "nbb" #no bouning boxes
         if params['show_boxes']:
             segmentation = draw_boxes(image=segmentation, boxes=gt_bboxes, color='g', linewidth=3)
             cv2.rectangle(frame, (10, 2), (120,20), (255,255,255), -1)
@@ -235,6 +236,11 @@ def eval_sota(vidcap, test_len, backSub, params):
             segmentation = draw_boxes(image=segmentation, boxes=det_bboxes, color='r', linewidth=3)
             cv2.imshow("Segmentation mask with detected boxes and gt", segmentation)
             cv2.imshow('Frame', frame)
+            text_bboxes = ""
+
+
+        if params['save_results'] and frame_id >= 1169 and frame_id < 1229 : # if frame_id >= 535 and frame_id < 550
+            cv2.imwrite(params['results_path'] + f"seg_{str(frame_id)}_pp_{params['sota_method']}_{text_bboxes}.bmp", segmentation.astype(int))
 
             if cv2.waitKey() == 113:  # press q to quit
                 break
