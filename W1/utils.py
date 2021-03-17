@@ -31,7 +31,7 @@ def draw_boxes(image, boxes, color='g', linewidth=2, det=False):
 def save_gif(source_path, results_path):
     # Build GIF
 
-    with imageio.get_writer(results_path, mode='I', fps=1) as writer:
+    with imageio.get_writer(results_path, mode='I', fps=10) as writer:
         for filename in sorted(os.listdir(source_path)):
             image = imageio.imread(source_path + filename)
             writer.append_data(image)

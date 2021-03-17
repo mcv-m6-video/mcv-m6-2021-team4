@@ -37,6 +37,9 @@ def parse_args(args=sys.argv[1:]):
     parser.add_argument('--num_frames_eval', type=int, default=1606,
                         help='number of frames to evaluate')
 
+    parser.add_argument('--bg_est', type=str, default='adaptive',
+                        help='bg estimation method')
+
     parser.add_argument('--alpha', type=float, default=3,
                         help='alpha parameter')
 
@@ -57,7 +60,7 @@ def parse_args(args=sys.argv[1:]):
 
     parser.add_argument('--sota_method', type=str, default="MOG2",
                         choices=['MOG', 'MOG2', 'LSBP', 'KNN', 'GSOC'],
-                        help='State of the art method for Background Substraction task')
+                        help='State of the art method for Background Substraction')
 
     return parser.parse_args(args)
 

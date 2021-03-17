@@ -94,7 +94,6 @@ def fg_bboxes(seg, frame_id, params):
         idx += 1
 
     return discard_overlapping_bboxes(bboxes)
-    # return bboxes
 
 bg_est_method = {
     'static': static_bg_est,
@@ -215,7 +214,7 @@ def eval_sota(vidcap, test_len, backSub, params):
         _ ,frame = vidcap.read()
 
         segmentation = backSub.apply(frame)
-        # segmentation[segmentation<200] = 0
+
         roi = cv2.imread(params['roi_path'], cv2.IMREAD_GRAYSCALE) / 255
         segmentation = segmentation * roi
         segmentation = postprocess_fg(segmentation)
@@ -237,9 +236,15 @@ def eval_sota(vidcap, test_len, backSub, params):
             cv2.imshow("Segmentation mask with detected boxes and gt", segmentation)
             cv2.imshow('Frame', frame)
 
-        keyboard = cv2.waitKey(30)
-        if keyboard == 'q' or keyboard == 27:
-            break
+            if cv2.waitKey() == 113:  # press q to quit
+                break
+
+        if params['save_results'] and frame_id >= 1169 and frame_id < 1229:
+
+            segmentation = draw_boxes(image=segmentation, boxes=gt_bboxes, color='g', linewidth=3)
+            segmentation = draw_boxes(image=segmentation, boxes=det_bboxes, color='r', linewidth=3)
+
+            cv2.imwrite(f"seg/{str(frame_id)}.png", segmentation.astype(int))
 
         frame_id += 1
 
