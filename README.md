@@ -32,15 +32,15 @@ The goal of this project is to:
  
 The goal of this project is to:
 * **Background estimation**
-   * *Model the background pixels of a video sequence using a simple statistical model to classify the background / foreground*    
-          * Adaptive / Non-adaptive 
-          * Single Gaussian per pixel
+  * Model the background pixels of a video sequence using a simple statistical model to classify the background / foreground    
+    + Adaptive / Non-adaptive 
+    + Single Gaussian per pixel
     
 * **Comparison with more complex models**
 
 #### Task 1: Gaussian distribution and Evaluate
 + One Gaussian function to model each background pixel
-  + First 25% of the test sequence to model background
+  + First 25% of the video sequence to model background
   + Mean and variance of pixels
  + Second 75% to segment the foreground and evaluate
 + Evaluate results
@@ -60,5 +60,5 @@ The goal of this project is to:
 + Zivkovic, Zoran & Van der Heijden, F.. (2006). Efficient adaptive density estimation per image pixel for the task of background subtraction. Pattern Recognition Letters. 27. 773-780. 10.1016/j.patrec.2005.11.005. 
 
 #### Task 4: Color sequences
-+ Update with support color sequences
++ Use multiple gaussians in different color spaces
 
