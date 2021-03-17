@@ -31,8 +31,8 @@ The goal of this project is to:
 ## Week 2
  
 The goal of this project is to:
-**Background estimation**
-*Model the background pixels of a video sequence using a simple statistical model to classify the background / foreground*    
+* **Background estimation**
+* *Model the background pixels of a video sequence using a simple statistical model to classify the background / foreground*    
     * Adaptive / Non-adaptive 
     * Single Gaussian per pixel
     
