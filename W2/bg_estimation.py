@@ -237,6 +237,9 @@ def eval_sota(vidcap, test_len, backSub, params):
             cv2.imshow("Segmentation mask with detected boxes and gt", segmentation)
             cv2.imshow('Frame', frame)
 
+        if params['save_results'] and frame_id >= 1169 and frame_id < 1229 : # if frame_id >= 535 and frame_id < 550
+            cv2.imwrite(params['results_path'] + f"seg_{str(frame_id)}_pp_{params['sota_method']}_ys_nbb.bmp", segmentation.astype(int))
+
         keyboard = cv2.waitKey(30)
         if keyboard == 'q' or keyboard == 27:
             break

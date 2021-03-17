@@ -9,7 +9,9 @@ def run(args):
         'roi_path': args.roi_path,
         'gt_path': args.gt_path,
         'show_boxes': args.show_boxes,
-        'sota_method': args.sota_method
+        'sota_method': args.sota_method,
+        'save_results': args.save_results,
+        'results_path': args.results_path
     }
 
     vidcap = cv2.VideoCapture(params['video_path'])
