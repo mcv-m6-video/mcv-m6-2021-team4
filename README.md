@@ -36,7 +36,7 @@ The goal of this project is to:
           * Adaptive / Non-adaptive 
           * Single Gaussian per pixel
     
-* **Comparison with more complex models **
+* **Comparison with more complex models**
 
     
 
