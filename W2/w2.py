@@ -37,14 +37,27 @@ def parse_args(args=sys.argv[1:]):
     parser.add_argument('--num_frames_eval', type=int, default=1606,
                         help='number of frames to evaluate')
 
+    parser.add_argument('--alpha', type=float, default=3,
+                        help='alpha parameter')
+
+    parser.add_argument('--rho', type=float, default=0.03,
+                        help='rho parameter')
+
     parser.add_argument('--show_boxes', action='store_true',
                         help='show bounding boxes')
+
+    parser.add_argument('--color_space', type=str, default='grayscale',
+                        help='color space')
+
+    parser.add_argument('--voting', type=str, default='unanimous',
+                        help='voting method')
 
     parser.add_argument('--save_results', action='store_true',
                         help='save detections')
 
     parser.add_argument('--sota_method', type=str, default="MOG2",
-                        help='State of the art method for Background Substraction task. Options: MOG, MOG2')
+                        choices=['MOG', 'MOG2', 'LSBP', 'KNN', 'GSOC'],
+                        help='State of the art method for Background Substraction task')
 
     return parser.parse_args(args)
 
@@ -55,20 +68,22 @@ if __name__ == '__main__':
 
     if args.t1:
         print('Executing task 1')
-
-        alphas = np.linspace(0, 10, 21)
-        for alpha in alphas:
-            rec, prec, ap = t1_run(args, alpha=alpha)
-            print(f'alpha: {alpha}, ap: {ap}')
+        ap = t1_run(args, alpha=args.alpha)
+        print(f'alpha: {args.alpha}, ap: {ap}')
 
     if args.t2:
         print('Executing task 2')
-        t2_run(args, alpha=3, rho=0.05)
+        ap = t2_run(args, alpha=args.alpha, rho=args.rho)
+        print(f'alpha: {args.alpha}, rho: {args.rho}, ap: {ap}')
 
     if args.t3:
         print('Executing task 3')
-        t3_run(args)
+        ap = t3_run(args)
+        print(f'sota_method: {args.sota_method}, ap: {ap}')
 
     if args.t4:
         print('Executing task 4')
-        t4_run(args, bg_est='adaptive', alpha=3, rho=0.05, color_space='RGB', voting='simple')
+        bg_est = 'adaptive'
+        ap = t4_run(args, bg_est=bg_est, alpha=args.alpha, rho=args.rho,
+                    color_space=args.color_space, voting=args.voting)
+        print(f'bg_est: {bg_est}, alpha: {args.alpha}, rho: {args.rho}, color_space: {args.color_space}, voting: {args.voting}, ap: {ap}')

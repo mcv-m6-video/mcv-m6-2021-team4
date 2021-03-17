@@ -77,6 +77,7 @@ def adaptive_bg_est(image, frame_size, mean, std, params):
 
     return segmentation, mean, std
 
+
 def fg_bboxes(seg, frame_id, params):
     bboxes = []
     roi = cv2.imread(params['roi_path'], cv2.IMREAD_GRAYSCALE) / 255
@@ -122,7 +123,7 @@ def eval(vidcap, frame_size, mean, std, params):
         if params['save_results'] and frame_id >= 1169 and frame_id < 1229 : # if frame_id >= 535 and frame_id < 550
             cv2.imwrite(params['results_path'] + f"seg_{str(frame_id)}_pp_{str(params['alpha'])}.bmp", segmentation.astype(int))
 
-        det_bboxes = fg_bboxes(segmentation, frame_id)
+        det_bboxes = fg_bboxes(segmentation, frame_id, params)
         detections += det_bboxes
 
         gt_bboxes = []
@@ -136,8 +137,7 @@ def eval(vidcap, frame_size, mean, std, params):
             seg_boxes = draw_boxes(image=seg_boxes, boxes=gt_bboxes, color='g', linewidth=3)
 
             cv2.imshow("Segmentation mask with detected boxes and gt", seg_boxes)
-            keyboard = cv2.waitKey(30)
-            if keyboard == 'q' or keyboard == 27:
+            if cv2.waitKey() == 113:  # press q to quit
                 break
 
         frame_id += 1
@@ -145,7 +145,7 @@ def eval(vidcap, frame_size, mean, std, params):
     detections = temporal_filter(group_by_frame(detections), init=init_frame, end=frame_id)
     rec, prec, ap = voc_evaluation.voc_eval(detections, annotations, ovthresh=0.5, use_confidence=False)
 
-    return rec, prec, ap
+    return ap
 
 def train(vidcap, frame_size, train_len, params):
     count = 0
@@ -185,16 +185,11 @@ def train_sota(vidcap, train_len, backSub):
     for t in tqdm(range(train_len)):
         #update the background model
         _ ,frame = vidcap.read()
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        segmentation = backSub.apply(frame)
-        segmentation[segmentation<200] = 0
-        # print(segmentation.shape)
-        # print(np.unique(segmentation))
-        # break
+        backSub.apply(frame)
     
     return backSub #return backSub updated
 
-def eval_sota(vidcap, test_len, backSub, params, showResults=True):
+def eval_sota(vidcap, test_len, backSub, params):
     print("Evaluating SOTA")  
     gt = read_annotations(params["gt_path"], grouped=True, use_parked=False)
     frame_id = int(vidcap.get(cv2.CAP_PROP_POS_FRAMES))
@@ -205,11 +200,13 @@ def eval_sota(vidcap, test_len, backSub, params, showResults=True):
     for t in tqdm(range(test_len)):
 
         _ ,frame = vidcap.read()
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         segmentation = backSub.apply(frame)
-        segmentation[segmentation<200] = 0
-        det_bboxes = fg_bboxes(segmentation,frame_id, params)
+        # segmentation[segmentation<200] = 0
+        roi = cv2.imread(params['roi_path'], cv2.IMREAD_GRAYSCALE) / 255
+        segmentation = segmentation * roi
+        segmentation = postprocess_fg(segmentation)
+        det_bboxes = fg_bboxes(segmentation, frame_id, params)
         detections += det_bboxes
 
         segmentation = cv2.cvtColor(segmentation.astype(np.uint8), cv2.COLOR_GRAY2RGB)
@@ -219,7 +216,7 @@ def eval_sota(vidcap, test_len, backSub, params, showResults=True):
             gt_bboxes = gt[frame_id]
         annotations[frame_id] = gt_bboxes
 
-        if showResults:
+        if params['show_boxes']:
             segmentation = draw_boxes(image=segmentation, boxes=gt_bboxes, color='g', linewidth=3)
             cv2.rectangle(frame, (10, 2), (120,20), (255,255,255), -1)
             cv2.putText(frame, params["sota_method"]+" - "+str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
@@ -233,7 +230,6 @@ def eval_sota(vidcap, test_len, backSub, params, showResults=True):
 
         frame_id += 1
 
+    detections = temporal_filter(group_by_frame(detections), init=535, end=frame_id)
     rec, prec, ap = voc_evaluation.voc_eval(detections, annotations, ovthresh=0.5, use_confidence=False)   
-    print("Recall: ", rec)
-    print("Precission: ", prec)
-    print("AP: ", ap)
+    return ap
