@@ -28,3 +28,16 @@ The goal of this project is to:
     * IoU vs Time
     * Optical Flow
 
+## Week 2
+ 
+The goal of this project is to:
+**Background estimation**
+*Model the background pixels of a video sequence using a simple statistical model to classify the background / foreground*    
+    * Adaptive / Non-adaptive 
+    * Single Gaussian per pixel
+    
+* **Comparison with more complex models **
+
+    
+
+
