@@ -20,7 +20,7 @@ color_space = {
     'YCrCb': [cv2.COLOR_BGR2YCrCb,3],
     'H': [cv2.COLOR_BGR2HSV,1],
     'L': [cv2.COLOR_BGR2LAB,1],
-    'CrCb':[cv2.COLOR_BGR2YCrCb,2]
+    'CbCr':[cv2.COLOR_BGR2YCrCb,2]
 }
 
 
@@ -111,14 +111,14 @@ def eval(vidcap, frame_size, mean, std, params):
         _, frame = vidcap.read()
         frame = cv2.cvtColor(frame, color_space[params['color_space']][0])
         if params['color_space'] == 'H':
-            H,S,V = frame.split(frame)
-            frame=H
+            H, S, V = np.split(frame, 3, axis=2)
+            frame = np.squeeze(H)
         if params['color_space'] == 'L':
-            L,A,B = frame.split(frame)
-            frame=L
+            L, A, B = np.split(frame, 3, axis=2)
+            frame = np.squeeze(L)
         if params['color_space'] == 'CbCr':
-            Y,Cb,Cr= frame.split(frame)
-            frame=np.dstack((Cb,Cr))
+            Y, Cb, Cr = np.split(frame, 3, axis=2)
+            frame = np.dstack((Cb, Cr))
             
         segmentation, mean, std = bg_est_method[params['bg_est']](frame,frame_size, mean, std, params)
         roi = cv2.imread(params['roi_path'], cv2.IMREAD_GRAYSCALE) / 255
@@ -168,13 +168,13 @@ def train(vidcap, frame_size, train_len, params):
         _, frame = vidcap.read()
         frame = cv2.cvtColor(frame, color_space[params['color_space']][0])
         if params['color_space'] == 'H':
-            H,S,V = frame.split(frame)
-            frame=H
+            H,S,V = np.split(frame,3,axis=2)
+            frame=np.squeeze(H)
         if params['color_space'] == 'L':
-            L,A,B = frame.split(frame)
-            frame=L
+            L,A,B = np.split(frame,3,axis=2)
+            frame=np.squeeze(L)
         if params['color_space'] == 'CbCr':
-            Y,Cb,Cr= frame.split(frame)
+            Y,Cb,Cr= np.split(frame,3,axis=2)
             frame=np.dstack((Cb,Cr))
         count += 1
         delta = frame - mean
