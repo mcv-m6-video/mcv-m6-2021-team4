@@ -20,12 +20,13 @@ colors = {
 }
 
 
-def draw_boxes(image, boxes, color='g', linewidth=2, det=False):
+def draw_boxes(image, boxes, color='g', linewidth=2, det=False, boxIds=False):
     rgb = colors[color]
     for box in boxes:
         image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), rgb, linewidth)
         if det:
             cv2.putText(image, str(box.confidence), (int(box.xtl), int(box.ytl) - 5), cv2.FONT_ITALIC, 0.6, rgb, linewidth)
+        # if boxIds
     return image
 
 def save_gif(source_path, results_path):
