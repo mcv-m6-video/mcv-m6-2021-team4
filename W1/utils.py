@@ -2,6 +2,7 @@ import cv2
 # import ffmpeg
 import imageio
 import os
+import numpy as np
 
 # (
 #     ffmpeg
@@ -18,15 +19,26 @@ colors = {
     'g': (0, 255, 0),
     'b': (255, 0, 0)
 }
+color_ids = {}
 
 
 def draw_boxes(image, boxes, color='g', linewidth=2, det=False, boxIds=False):
     rgb = colors[color]
     for box in boxes:
-        image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), rgb, linewidth)
+        
+        if boxIds:
+            if box.id in list(color_ids.keys()):
+                pass
+            else:
+                color_ids[box.id]=np.random.uniform(0,256,size=3)
+            cv2.putText(image, str(box.id), (int(box.xtl), int(box.ytl) + 15), cv2.FONT_ITALIC, 0.6, color_ids[box.id], 2)
+            image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), color_ids[box.id], linewidth)
+        else:
+            image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), rgb, linewidth)
+
         if det:
             cv2.putText(image, str(box.confidence), (int(box.xtl), int(box.ytl) - 5), cv2.FONT_ITALIC, 0.6, rgb, linewidth)
-        # if boxIds
+       
     return image
 
 def save_gif(source_path, results_path):

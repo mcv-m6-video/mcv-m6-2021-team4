@@ -35,7 +35,7 @@ def eval_tracking(vidcap, test_len, params):
 
         text_bboxes = "nbb" #no bouning boxes
         # if params['show_boxes']:
-        frame = draw_boxes(image=frame, boxes=gt_bboxes, color='g', linewidth=3)
+        frame = draw_boxes(image=frame, boxes=gt_bboxes, color='g', linewidth=3,boxIds=True)
 
         cv2.rectangle(frame, (10, 2), (120,20), (255,255,255), -1)
         cv2.putText(frame, str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
