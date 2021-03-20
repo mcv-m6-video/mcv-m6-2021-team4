@@ -31,7 +31,7 @@ def draw_boxes(image, boxes, color='g', linewidth=2, det=False, boxIds=False):
                 pass
             else:
                 color_ids[box.id]=np.random.uniform(0,256,size=3)
-            cv2.putText(image, str(box.id), (int(box.xtl), int(box.ytl) + 15), cv2.FONT_ITALIC, 0.6, color_ids[box.id], 2)
+            cv2.putText(image, str(box.id), (int(box.xtl), int(box.ytl) + 20), cv2.FONT_ITALIC, 0.6, color_ids[box.id], 2)
             image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), color_ids[box.id], linewidth)
         else:
             image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), rgb, linewidth)
