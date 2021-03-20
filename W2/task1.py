@@ -38,3 +38,19 @@ def run(args, alpha=3):
 
     # Evaluate
     return eval(vidcap, frame_size, mean, std, params)
+
+    
+def create_table():
+    import pandas as pd
+    import seaborn as sns
+    df = pd.read_csv(r'W2\alpha_values.txt', delimiter = ",",names=["alpha","AP"])
+    print(df.head())
+    print(df['alpha'])
+    with sns.axes_style("darkgrid"):
+        sns.lineplot(data=df, x="alpha", y="AP")
+    import matplotlib.pyplot as plt
+    plt.title('Alpha value vs Average Precision without parked cars')
+    plt.show()  
+
+if __name__== "__main__" :
+    create_table()
