@@ -22,6 +22,7 @@ def eval_tracking(vidcap, test_len, params):
     annotations = {}
 
     tracking = Tracking()
+    det_bboxes_old = -1
 
     for t in tqdm(range(test_len)):
 
@@ -30,7 +31,7 @@ def eval_tracking(vidcap, test_len, params):
         # keyboard = cv2.waitKey(30)
 
         det_bboxes = det[frame_id]
-        tracking.set_frame_ids(det_bboxes)
+        tracking.set_frame_ids(det_bboxes, det_bboxes_old)
         detections += det_bboxes
 
         gt_bboxes = []
@@ -39,7 +40,7 @@ def eval_tracking(vidcap, test_len, params):
         annotations[frame_id] = gt_bboxes
 
         # if params['show_boxes']:
-        # frame = draw_boxes(image=frame, boxes=gt_bboxes, color='g', linewidth=3, boxIds=True)
+        frame = draw_boxes(image=frame, boxes=gt_bboxes, color='g', linewidth=3, boxIds=True)
         frame = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True)
         cv2.rectangle(frame, (10, 2), (120,20), (255,255,255), -1)
         cv2.putText(frame, str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
@@ -47,6 +48,7 @@ def eval_tracking(vidcap, test_len, params):
         keyboard = cv2.waitKey(30)
 
         frame_id += 1
+        det_bboxes_old = det_bboxes
 
 
 if __name__ == "__main__":

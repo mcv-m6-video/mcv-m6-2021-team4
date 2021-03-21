@@ -25,7 +25,7 @@ color_ids = {}
 def draw_boxes(image, boxes, color='g', linewidth=2, det=False, boxIds=False):
     rgb = colors[color]
     for box in boxes:
-        print(box.id)
+        # print(box.id)
         if boxIds:
             if box.id in list(color_ids.keys()):
                 pass

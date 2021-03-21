@@ -113,3 +113,26 @@ def voc_eval(detections, annotations, ovthresh=0.5, use_confidence=False):
     ap = voc_ap(rec, prec)
 
     return rec, prec, ap
+
+
+def voc_iou_tracking(BBGT,bb):
+    """
+    Compute IoU between bounding box object= BBGT
+    and detected bounding box = bb
+    """
+    # intersection
+    ixmin = np.maximum(BBGT[0], bb[0])
+    iymin = np.maximum(BBGT[1], bb[1])
+    ixmax = np.minimum(BBGT[2], bb[2])
+    iymax = np.minimum(BBGT[3], bb[3])
+    iw = np.maximum(ixmax - ixmin + 1.0, 0.0)
+    ih = np.maximum(iymax - iymin + 1.0, 0.0)
+    inters = iw * ih
+
+    # union
+    uni = ((bb[2] - bb[0] + 1.0) * (bb[3] - bb[1] + 1.0)
+          + (BBGT[2] - BBGT[0] + 1.0) * (BBGT[3] - BBGT[1] + 1.0)
+          - inters)
+    overlaps = inters/uni
+    return overlaps
+
