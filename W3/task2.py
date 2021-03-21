@@ -31,7 +31,7 @@ def eval_tracking(vidcap, test_len, params):
         # keyboard = cv2.waitKey(30)
 
         det_bboxes = det[frame_id]
-        tracking.set_frame_ids(det_bboxes, det_bboxes_old)
+        det_bboxes = tracking.set_frame_ids(det_bboxes, det_bboxes_old)
         detections += det_bboxes
 
         gt_bboxes = []
@@ -40,8 +40,9 @@ def eval_tracking(vidcap, test_len, params):
         annotations[frame_id] = gt_bboxes
 
         # if params['show_boxes']:
-        frame = draw_boxes(image=frame, boxes=gt_bboxes, color='g', linewidth=3, boxIds=True)
+        # frame = draw_boxes(image=frame, boxes=gt_bboxes, color='g', linewidth=3, boxIds=True)
         frame = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True)
+        # frame = draw_boxes(image=frame, boxes=det_bboxes, color='g', linewidth=3, boxIds=False)
         cv2.rectangle(frame, (10, 2), (120,20), (255,255,255), -1)
         cv2.putText(frame, str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
         cv2.imshow('Frame', frame)
@@ -56,7 +57,7 @@ if __name__ == "__main__":
     params = {
         'video_path': "./data/vdo.avi",
         'gt_path': "./data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml",
-        'det_path': "./data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt",
+        'det_path': "./data/AICity_data/train/S03/c010/det/det_yolo3.txt",
         'roi_path': "./data/AICity_data/train/S03/c010/roi.jpg",
         'show_boxes': True,
         'sota_method': "MOG2",
