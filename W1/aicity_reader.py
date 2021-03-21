@@ -43,7 +43,7 @@ def read_annotations(path, grouped=True, use_parked=False):
     return annotations
 
 
-def read_detections(path, grouped=False):
+def read_detections(path, grouped=False, confidenceThr=0.5):
     """
     Format: <frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z>
     """
@@ -54,16 +54,17 @@ def read_detections(path, grouped=False):
     detections = []
     for line in lines:
         det = line.split(sep=',')
-        detections.append(BoundingBox(
-            id=int(det[1]),
-            label='car',
-            frame=int(det[0]) - 1,
-            xtl=float(det[2]),
-            ytl=float(det[3]),
-            xbr=float(det[2]) + float(det[4]),
-            ybr=float(det[3]) + float(det[5]),
-            confidence=float(det[6])
-        ))
+        if float(det[6]) >= confidenceThr:
+            detections.append(BoundingBox(
+                id=int(det[1]),
+                label='car',
+                frame=int(det[0]) - 1,
+                xtl=float(det[2]),
+                ytl=float(det[3]),
+                xbr=float(det[2]) + float(det[4]),
+                ybr=float(det[3]) + float(det[5]),
+                confidence=float(det[6])
+            ))
 
     if grouped:
         return group_by_frame(detections)
