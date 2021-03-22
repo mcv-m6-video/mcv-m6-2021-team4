@@ -105,6 +105,6 @@ if __name__ == '__main__':
         test_gt = get_test_subset(gt, num_frames=2141, test_perc=test_perc)
         test_det = get_test_subset(det, num_frames=2141, test_perc=test_perc)
 
-        iou_thr = 0.5
+        iou_thr = 0.7
         rec, prec, ap = voc_eval(test_det, group_by_frame(test_gt), iou_thr, use_confidence=True)
         print('AP' + str(iou_thr) + ': ', ap)
