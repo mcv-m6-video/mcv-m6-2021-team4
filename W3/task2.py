@@ -27,7 +27,7 @@ def eval_tracking(vidcap, test_len, params):
     det_bboxes_old = -1
 
     # Create an accumulator that will be updated during each frame
-    acc = mm.MOTAccumulator(auto_id=True)
+    accumulator = mm.MOTAccumulator(auto_id=True)
 
     for t in tqdm(range(test_len)):
 
@@ -44,18 +44,18 @@ def eval_tracking(vidcap, test_len, params):
             gt_bboxes = gt[frame_id]
         annotations[frame_id] = gt_bboxes
 
-        # acc.update(
-        #     [bbox.id for bbox in det_bboxes],                     # Ground truth objects in this frame
-        #     [bbox.id for bbox in det_bboxes],                  # Detector hypotheses in this frame
-        #     [
-        #         [0.1, np.nan, 0.3],     # Distances from object 1 to hypotheses 1, 2, 3
-        #         [0.5,  0.2,   0.3]      # Distances from object 2 to hypotheses 1, 2, 3
-        #     ]
-        # )
+        objs = [bbox.center for bbox in gt_bboxes]
+        hyps = [bbox.center for bbox in det_bboxes]
+
+        accumulator.update(
+            [bbox.id for bbox in gt_bboxes],             # Ground truth objects in this frame
+            [bbox.id for bbox in det_bboxes],            # Detector hypotheses in this frame
+            mm.distances.norm2squared_matrix(objs, hyps) # Distances from object 1 to hypotheses 1, 2, 3 and Distances from object 2 to hypotheses 1, 2, 3
+        )
 
         if params['show_boxes']:
-            frame = draw_boxes(image=frame, boxes=gt_bboxes, color='g', linewidth=3, boxIds=True)
-            # frame = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True)
+            # frame = draw_boxes(image=frame, boxes=gt_bboxes, color='g', linewidth=3, boxIds=True)
+            frame = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True)
             # frame = draw_boxes(image=frame, boxes=det_bboxes, color='g', linewidth=3, boxIds=False)
             cv2.rectangle(frame, (10, 2), (120,20), (255,255,255), -1)
             cv2.putText(frame, str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
@@ -65,6 +65,10 @@ def eval_tracking(vidcap, test_len, params):
         frame_id += 1
         det_bboxes_old = det_bboxes
 
+    
+    mh = mm.metrics.create()
+    summary = mh.compute(accumulator, metrics=['precision','recall','idp','idr','idf1'], name='acc')
+    print(summary)
 
 if __name__ == "__main__":
 

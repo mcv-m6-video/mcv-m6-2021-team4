@@ -26,12 +26,12 @@ class Tracking:
             
             return det_bboxes_new
         else:
-            if len(det_bboxes_new)> len(det_bboxes_prev):
-                print("More new than old")
-            elif len(det_bboxes_new)< len(det_bboxes_prev):
-                print("more old than new")
-            else:
-                print("equal det")
+            # if len(det_bboxes_new)> len(det_bboxes_prev):
+            #     print("More new than old")
+            # elif len(det_bboxes_new)< len(det_bboxes_prev):
+            #     print("more old than new")
+            # else:
+            #     print("equal det")
             
             matches = {}
             for i,bb in enumerate(det_bboxes_new):
@@ -82,8 +82,8 @@ class Tracking:
             #     #TODO
             #     return det_bboxes_prev
 
-            print(matches)
-            print("ei")
+            # print(matches)
+            # print("ei")
                     # print(iou)
         return det_bboxes_new
 
