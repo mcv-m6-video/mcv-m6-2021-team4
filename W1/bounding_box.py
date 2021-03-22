@@ -14,6 +14,7 @@ class BoundingBox:
         self.occluded = occluded
         self.parked = parked
         self.confidence = confidence
+        # self.center_pos = self.center() # to compute parked cars
 
     @property
     def box(self):

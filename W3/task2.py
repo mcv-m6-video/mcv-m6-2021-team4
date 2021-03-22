@@ -15,7 +15,7 @@ from tracking import Tracking
 def eval_tracking(vidcap, test_len, params):
     print("Evaluating Tracking")  
     gt = read_annotations(params["gt_path"], grouped=True, use_parked=False)
-    det = read_detections(params["det_path"],grouped=True)
+    det = read_detections(params["det_path"],grouped=True, confidenceThr=0.5)
     frame_id = int(vidcap.get(cv2.CAP_PROP_POS_FRAMES))
 
     detections = []
@@ -57,7 +57,8 @@ if __name__ == "__main__":
     params = {
         'video_path': "./data/vdo.avi",
         'gt_path': "./data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml",
-        'det_path': "./data/AICity_data/train/S03/c010/det/det_yolo3.txt",
+        # 'det_path': "./data/AICity_data/train/S03/c010/det/det_yolo3.txt", #YOLO
+        'det_path': "./data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt", #MASK RCNN
         'roi_path': "./data/AICity_data/train/S03/c010/roi.jpg",
         'show_boxes': True,
         'sota_method': "MOG2",
