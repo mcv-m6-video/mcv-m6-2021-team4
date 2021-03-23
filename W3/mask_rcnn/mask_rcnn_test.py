@@ -1,7 +1,7 @@
 '''
 READ ME!
 Libraries that work:
-pip install tensorflow==1.14.0
+pip install tensorflow-gpu==1.14.0
 pip install keras==2.2.4
 
 Import repo:
@@ -25,7 +25,7 @@ import matplotlib.patches as patches
 import skimage
 from tqdm import tqdm
 from PIL import Image
-
+from timeit import default_timer as timer
 # Root directory of the imported project
 ROOT_DIR = os.path.abspath("./Mask_RCNN")
 
@@ -86,22 +86,13 @@ def mask_to_ai(frame_id,detections,results_path):
                 
     return frame_detections
 
-def detect_image(img): #scale_percent=25,
+def detect_image(img,times): #scale_percent=25,
+    start = timer()
+    detections = model.detect([img], verbose=0)
+    end = timer()
 
-    #calculate the 50 percent of original dimensions
-    #width = int(img.shape[1] * scale_percent / 100)
-    #height = int(img.shape[0] * scale_percent / 100)
-
-    # dsize
-    #dsize = (width, height)
-
-    # resize image
-    #image = cv2.resize(img, dsize)
-
-    detections = model.detect([img], verbose=0)#image
-    
-    return detections[0]
-
+    times.append(end-start)
+    return detections[0],times
 
 
 # Override the training configurations with a few
@@ -166,7 +157,8 @@ elif config.NAME == "coco":
 print("Loading weights ", weights_path)
 model.load_weights(weights_path, by_name=True)
 #-------------------------------
-
+if tf.test.gpu_device_name(): 
+    print('Default GPU Device:  {}'.format(tf.test.gpu_device_name()))
 #-------Run Detection------
 results_path = 'PATH.TO.RESULTS'
 vid = cv2.VideoCapture('PATH.TO/AICity_data/train/S03/c010/vdo.avi')
@@ -175,7 +167,7 @@ frame_count = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
 frame_width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-
+times = []
 #while(True):
 for ii in tqdm(range(frame_count)):#frame_count
     ret, frame1 = vid.read()
@@ -183,6 +175,6 @@ for ii in tqdm(range(frame_count)):#frame_count
     
 
     # Run detection
-    detections = detect_image(frame)#,scale_percent=22
+    detections,times = detect_image(frame,times)#,scale_percent=22
     frame_detections = mask_to_ai(ii,detections,results_path)
-
+print('Inference time (s/img): ', np.mean(times))  
