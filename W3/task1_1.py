@@ -27,9 +27,10 @@ model_detect = {
 }
 
 detection_paths = {
-    'faster' : 'results/task1_1_faster/faster_rcnn_R_50_FPN_3x/detections.txt',
-    'retina' : 'results/task1_1_retina/retinanet_R_50_FPN_3x/detections.txt',
-    'yolo' : 'results/yolo/detections.txt'
+    'faster' : 'results/task1_1/faster/faster_rcnn_R_50_FPN_3x/detections.txt',
+    'retina' : 'results/task1_1/retina/retinanet_R_50_FPN_3x/detections.txt',
+    'yolo' : 'results/task1_1/yolo/detections.txt',
+    'mask' : 'results/task1_1/mask/detections.txt'
 }
 
 
@@ -55,19 +56,38 @@ def parse_args(args=sys.argv[1:]):
     parser.add_argument('--gt_path', type=str, default='/mnt/gpid08/users/ian.riera/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml',
                         help='path to AICity Challenge annotations')
 
-    # parser.add_argument('--det_path', type=str, default='results/task1_1_faster/faster_rcnn_R_50_FPN_3x/detections.txt',
-    #                     help='path to AICity Challenge detections')
+    parser.add_argument('--min_conf', type=float, default=0.5,
+                        help='minimum confidence score to accept a detection')
+
+    parser.add_argument('--min_iou', type=float, default=0.5,
+                        help='minimum intersection over union to consider a detection a true positive')
 
     parser.add_argument('--detect', action='store_true',
                         help='detect cars using the specified model')
 
-    parser.add_argument('--show_gt_det', action='store_true',
+    parser.add_argument('--visualize', action='store_true',
                         help='show groundtruth and detections for each frame')
 
     parser.add_argument('--evaluate', action='store_true',
                         help='evaluate the detections')
 
     return parser.parse_args(args)
+
+
+
+def filter_by_conf(detections, conf_thr=0.5):
+    print(conf_thr)
+    filtered_detections = []
+    for det in detections:
+        if det.confidence >= conf_thr:
+            filtered_detections.append(det)
+
+    print(len(detections))
+    print(len(filtered_detections))
+
+    return filtered_detections
+
+
 
 if __name__ == '__main__':
     args = parse_args()
@@ -77,9 +97,11 @@ if __name__ == '__main__':
     if args.detect:
         det_path = model_detect[args.model](args.video_path)
 
-    if args.show_gt_det:
+    if args.visualize:
         gt = read_annotations(args.gt_path, grouped=True, use_parked=True)
-        det = read_detections(det_path, grouped=True)
+        det = read_detections(det_path, grouped=False)
+
+        det = group_by_frame(filter_by_conf(det, conf_thr=args.min_conf))
 
         vidcap = cv2.VideoCapture(args.video_path)
         # vidcap.set(cv2.CAP_PROP_POS_FRAMES, frame_id)  # to start from frame #frame_id
@@ -99,12 +121,13 @@ if __name__ == '__main__':
 
     if args.evaluate:
         gt = read_annotations(args.gt_path, grouped=False, use_parked=True)
-        det = read_detections(det_path)
+        det = read_detections(det_path, grouped=False)
+
+        det = filter_by_conf(det, conf_thr=args.min_conf)
 
         test_perc = 0.75
         test_gt = get_test_subset(gt, num_frames=2141, test_perc=test_perc)
         test_det = get_test_subset(det, num_frames=2141, test_perc=test_perc)
 
-        iou_thr = 0.7
-        rec, prec, ap = voc_eval(test_det, group_by_frame(test_gt), iou_thr, use_confidence=True)
-        print('AP' + str(iou_thr) + ': ', ap)
+        rec, prec, ap = voc_eval(test_det, group_by_frame(test_gt), args.min_iou, use_confidence=True)
+        print('AP' + str(args.min_iou) + ': ', ap)

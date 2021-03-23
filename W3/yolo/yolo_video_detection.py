@@ -14,7 +14,7 @@ from PIL import Image
 
 from tqdm import tqdm
 
-def detect_image(model,img,params):
+def detect_image(model,img,params,times,start,end):
     # scale and pad image
     ratio = min(params['img_size']/img.size[0], params['img_size']/img.size[1])
     imw = round(img.size[0] * ratio)
@@ -30,9 +30,14 @@ def detect_image(model,img,params):
     input_img = Variable(image_tensor.type(torch.cuda.FloatTensor))
     # run inference on the model and get detections
     with torch.no_grad():
+        start.record()
         detections = model(input_img)
         detections = non_max_suppression(detections, 80, params['conf_thres'], params['nms_thres'])
-    return detections[0]
+        end.record()
+
+        torch.cuda.synchronize()
+        times.append(start.elapsed_time(end))
+    return detections[0], times
 
 def yolo_to_ai(frame_id,detections,results_path):
     # yolo format: [left,top,right,bottom,obj_confidence, class_confidence, class]
@@ -64,13 +69,19 @@ def yolo_inference(params):
     num_frames = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
 
     vid_detections=[]
+    times = []
+    start = torch.cuda.Event(enable_timing=True)
+    end = torch.cuda.Event(enable_timing=True)
+
     for frame_id in tqdm(range(num_frames)):
         _, frame = vid.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         pilimg = Image.fromarray(frame)
-        detections = detect_image(model,pilimg,params)
+        detections, times = detect_image(model,pilimg,params,times,start,end)
         frame_detections = yolo_to_ai(frame_id,detections,params['results_path'])
         vid_detections.append(frame_detections)
+
+    print('Inference time (s/img): ', np.mean(times)/1000)
 
     return vid_detections
 
@@ -79,7 +90,7 @@ if __name__ == '__main__':
 	    'video_path': '/mnt/gpid08/users/ian.riera/AICity_data/train/S03/c010/vdo.avi',
 	    'config_path': 'yolov3.cfg',
 	    'weights_path': 'yolov3.weights',
-	    'results_path': './',
+	    'results_path': '../results/task1_1/yolo/',
 	    'class_path': 'coco.names',
 	    'img_size': 416,
 	    'conf_thres': 0.5,

@@ -17,7 +17,7 @@ from tqdm import tqdm
 def detect(video_path):
     save_visual_detections = False
 
-    results_dir = 'results/task1_1_faster/'
+    results_dir = 'results/task1_1/faster'
 
     coco_car_id = 2
 
@@ -31,8 +31,9 @@ def detect(video_path):
 
     cfg.merge_from_file(model_zoo.get_config_file(model_path))
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
+    cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.4
     cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(model_path)
-    cfg.OUTPUT_DIR = results_dir + model
+    cfg.OUTPUT_DIR = results_dir
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 
     predictor = DefaultPredictor(cfg)
@@ -79,7 +80,6 @@ def detect(video_path):
             out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
             cv2.imwrite(output_path, out.get_image()[:, :, ::-1])
 
-    # print(times)
-    print(np.mean(times))
+    print('Inference time (s/img): ', np.mean(times)/1000)
 
     return det_path
