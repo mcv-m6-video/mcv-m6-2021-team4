@@ -23,7 +23,7 @@ def eval_tracking(vidcap, test_len, params):
 
     detections = []
     annotations = {}
-
+    list_positions={}
     tracking = Tracking()
     det_bboxes_old = -1
 
@@ -48,6 +48,13 @@ def eval_tracking(vidcap, test_len, params):
         objs = [bbox.center for bbox in gt_bboxes]
         hyps = [bbox.center for bbox in det_bboxes]
 
+        
+        for object_bb in det_bboxes:
+            if object_bb.id in list(list_positions.keys()):
+                list_positions[object_bb.id].append([int(x) for x in object_bb.center])
+            else:
+                list_positions[object_bb.id] = [[int(x) for x in object_bb.center]]
+
         accumulator.update(
             [bbox.id for bbox in gt_bboxes],             # Ground truth objects in this frame
             [bbox.id for bbox in det_bboxes],            # Detector hypotheses in this frame
@@ -55,8 +62,8 @@ def eval_tracking(vidcap, test_len, params):
         )
 
         if params['show_boxes']:
-            frame = draw_boxes(image=frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False)
-            frame = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True)
+            frame = draw_boxes(image=frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False, tracker= list_positions)
+            frame = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
             # if not det_bboxes_old==-1:
             #     frame = draw_boxes(image=frame, boxes=det_bboxes_old, color='r', linewidth=3, det=False, boxIds=True,old=True)
             # frame = draw_boxes(image=frame, boxes=det_bboxes, color='g', linewidth=3, boxIds=False)
