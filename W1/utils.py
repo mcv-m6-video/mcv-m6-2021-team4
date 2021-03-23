@@ -17,12 +17,13 @@ import numpy as np
 colors = {
     'r': (0, 0, 255),
     'g': (0, 255, 0),
-    'b': (255, 0, 0)
+    'b': (255, 0, 0),
+    'w': (255,255,255)
 }
 color_ids = {}
 
 
-def draw_boxes(image, boxes, color='g', linewidth=2, det=False, boxIds=False):
+def draw_boxes(image, boxes, color='g', linewidth=2, det=False, boxIds=False,old=False):
     rgb = colors[color]
     for box in boxes:
         # print(box.id)
@@ -31,8 +32,10 @@ def draw_boxes(image, boxes, color='g', linewidth=2, det=False, boxIds=False):
                 pass
             else:
                 color_ids[box.id]=np.random.uniform(0,256,size=3)
-            
-            cv2.putText(image, str(box.id), (int(box.xtl), int(box.ytl) + 20), cv2.FONT_ITALIC, 0.6, color_ids[box.id], 2)
+            if old:
+                cv2.putText(image, str(box.id), (int(box.xtl), int(box.ytl) + 120), cv2.FONT_ITALIC, 0.6, color_ids[box.id], 2)
+            else:
+                cv2.putText(image, str(box.id), (int(box.xtl), int(box.ytl) + 20), cv2.FONT_ITALIC, 0.6, color_ids[box.id], 2)
             # cv2.putText(image, str(box.id), (int(box.xtl), int(box.ytl) - 5), cv2.FONT_ITALIC, 0.6, rgb, linewidth)
             image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), color_ids[box.id], linewidth)
         else:

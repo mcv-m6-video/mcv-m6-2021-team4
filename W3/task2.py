@@ -16,8 +16,9 @@ import motmetrics as mm
 def eval_tracking(vidcap, test_len, params):
     print("Evaluating Tracking")  
     gt = read_annotations(params["gt_path"], grouped=True, use_parked=False)
-    det = read_detections(params["det_path"],grouped=True, confidenceThr=0.5)
+    det = read_detections(params["det_path"],grouped=True, confidenceThr=0.4)
     frame_id = int(vidcap.get(cv2.CAP_PROP_POS_FRAMES))
+    first_frame_id = frame_id
     print(frame_id)
 
     detections = []
@@ -29,7 +30,7 @@ def eval_tracking(vidcap, test_len, params):
     # Create an accumulator that will be updated during each frame
     accumulator = mm.MOTAccumulator(auto_id=True)
 
-    for t in tqdm(range(test_len)):
+    for t in tqdm(range((train_len + test_len) - first_frame_id)):
 
         _ ,frame = vidcap.read()
         # cv2.imshow('Frame', frame)
@@ -54,8 +55,10 @@ def eval_tracking(vidcap, test_len, params):
         )
 
         if params['show_boxes']:
-            # frame = draw_boxes(image=frame, boxes=gt_bboxes, color='g', linewidth=3, boxIds=True)
+            frame = draw_boxes(image=frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False)
             frame = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True)
+            # if not det_bboxes_old==-1:
+            #     frame = draw_boxes(image=frame, boxes=det_bboxes_old, color='r', linewidth=3, det=False, boxIds=True,old=True)
             # frame = draw_boxes(image=frame, boxes=det_bboxes, color='g', linewidth=3, boxIds=False)
             cv2.rectangle(frame, (10, 2), (120,20), (255,255,255), -1)
             cv2.putText(frame, str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
@@ -75,8 +78,8 @@ if __name__ == "__main__":
     params = {
         'video_path': "./data/vdo.avi",
         'gt_path': "./data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml",
-        # 'det_path': "./data/AICity_data/train/S03/c010/det/det_yolo3.txt", #YOLO
-        'det_path': "./data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt", #MASK RCNN
+        'det_path': "./data/AICity_data/train/S03/c010/det/det_yolo3.txt", #YOLO
+        # 'det_path': "./data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt", #MASK RCNN
         'roi_path': "./data/AICity_data/train/S03/c010/roi.jpg",
         'show_boxes': True,
         'sota_method': "MOG2",

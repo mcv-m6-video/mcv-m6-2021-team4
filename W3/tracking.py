@@ -51,6 +51,7 @@ class Tracking:
                         else:
                             matches[bb_prev.id] = [[i,max_iou]]
                 if not match_found:
+                    print("here")
                     setattr(det_bboxes_new[i], 'id', self.new_id())
                         
                         
@@ -58,7 +59,7 @@ class Tracking:
             id_assigned = []
 
             for items in list(matches.items()):
-                if len(items[1])> 2:
+                if len(items[1])>= 2:
                     sorted_list= sorted(items[1],key=lambda x: x[1],reverse=True)
                     bb_to_assign = sorted_list[0][0]
                     id_assigned.append(bb_to_assign)
@@ -71,6 +72,8 @@ class Tracking:
 
             for n in range(len(det_bboxes_new)):
                 if n not in id_assigned:
+                    print("here2")
+                    print(n)
                     setattr(det_bboxes_new[n], 'id', self.new_id())
 
 
