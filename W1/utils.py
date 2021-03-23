@@ -23,7 +23,7 @@ colors = {
 color_ids = {}
 
 
-def draw_boxes(image, boxes,tracker, color='g', linewidth=2, det=False, boxIds=False,old=False):
+def draw_boxes(image, boxes,tracker, kalman_predictions, color='g', linewidth=2, det=False, boxIds=False,old=False):
     rgb = colors[color]
     for box in boxes:
         # print(box.id)
@@ -36,11 +36,14 @@ def draw_boxes(image, boxes,tracker, color='g', linewidth=2, det=False, boxIds=F
                 cv2.putText(image, str(box.id), (int(box.xtl), int(box.ytl) + 120), cv2.FONT_ITALIC, 0.6, color_ids[box.id], linewidth)
             else:
                 cv2.putText(image, str(box.id), (int(box.xtl), int(box.ytl) + 20), cv2.FONT_ITALIC, 0.6, color_ids[box.id], linewidth)
-            # cv2.putText(image, str(box.id), (int(box.xtl), int(box.ytl) - 5), cv2.FONT_ITALIC, 0.6, rgb, linewidth)
-            if len(tracker[box.id])>2:
-                print(tracker[box.id])
-                # a = np.array([(375, 193), (364, 113), (277, 20), (271, 16), (52, 106), (133, 266), (289, 296), (372, 282)])
-                image =cv2.polylines(image,[np.array(tracker[box.id])],False,color_ids[box.id],linewidth)
+
+            # if len(tracker[box.id])>2:
+            #     image =cv2.polylines(image,[np.array(tracker[box.id])],False,color_ids[box.id],linewidth)
+
+            if len(kalman_predictions[box.id])>2:
+                image =cv2.polylines(image,[np.array(kalman_predictions[box.id])],False,color_ids[box.id],linewidth)
+
+
             image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), color_ids[box.id], linewidth)
         else:
             image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), rgb, linewidth)
