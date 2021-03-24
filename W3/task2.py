@@ -12,6 +12,7 @@ from utils import draw_boxes
 from bg_postprocess import temporal_filter, postprocess_fg, discard_overlapping_bboxes
 from tracking import Tracking
 import motmetrics as mm
+import Kalman
 
 
 from sort import Sort
@@ -119,7 +120,6 @@ def eval_tracking_sortKalman(vidcap, test_len, params):
     summary = mh.compute(accumulator, metrics=['precision', 'recall', 'idp', 'idr', 'idf1'], name='acc')
     print(summary)
 
-
 def eval_tracking_ourKalman(vidcap, test_len, params):
     print("Evaluating Tracking")  
     gt = read_annotations(params["gt_path"], grouped=True, use_parked=True)
@@ -204,9 +204,8 @@ def eval_tracking_ourKalman(vidcap, test_len, params):
             mm.distances.norm2squared_matrix(objs, hyps) # Distances from object 1 to hypotheses 1, 2, 3 and Distances from object 2 to hypotheses 1, 2, 3
         )
 
-        # if params['show_boxes']:
-        if False:
-            frame = draw_boxes(image=frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False, tracker= list_positions)
+        if params['show_boxes']:
+            # frame = draw_boxes(image=frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False, tracker= list_positions)
             frame = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True, tracker=list_positions)
             # if not det_bboxes_old==-1:
             #     frame = draw_boxes(image=frame, boxes=det_bboxes_old, color='r', linewidth=3, det=False, boxIds=True,old=True)
@@ -216,6 +215,9 @@ def eval_tracking_ourKalman(vidcap, test_len, params):
             cv2.imshow('Frame', frame)
             keyboard = cv2.waitKey(100)
 
+        if params['save_results'] and frame_id >= (355+535) and frame_id < (410+535) : # if frame_id >= 535 and frame_id < 550
+            cv2.imwrite(params['results_path'] +  f"tracking_{str(frame_id)}_ourKalman.jpg", frame.astype(int))
+
         frame_id += 1
         det_bboxes_old = det_bboxes
 
@@ -223,7 +225,6 @@ def eval_tracking_ourKalman(vidcap, test_len, params):
     mh = mm.metrics.create()
     summary = mh.compute(accumulator, metrics=['precision','recall','idp','idr','idf1'], name='acc')
     print(summary)
-
 
 def eval_tracking_MaximumOverlap(vidcap, test_len, params):
     print("Evaluating Tracking")  
@@ -345,6 +346,6 @@ if __name__ == "__main__":
     print("Test frames: ", test_len)
 
 
-    # eval_tracking_ourKalman(vidcap, test_len, params)
+    eval_tracking_ourKalman(vidcap, test_len, params)
     # eval_tracking_sortKalman(vidcap, test_len, params)
-    eval_tracking_MaximumOverlap(vidcap, test_len, params)
+    # eval_tracking_MaximumOverlap(vidcap, test_len, params)
