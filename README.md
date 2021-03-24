@@ -72,9 +72,9 @@ The goal of this project is to:
    + Mask R-CNN - Keras
 + Fine-tune with our data
 + K-Fold Cross-Validation
-   + Strategy A - First 25% frames for training - second 75% for test.
-   + Strategy B - First 25% Train - last 75% Test (same as Strategy A).
-   + Strategy A - Random 25% Train - rest for Test
+   + Strategy A - First 25% for training - second 75% for test.
+   + Strategy B - First 25% Train (cross-val) - last 75% Test (same as Strategy A).
+   + Strategy C - Random 25% Train (cross-val) - rest for Test
 
 #### Task 2: Object Tracking
 + Tracking by Maximum Overlap
