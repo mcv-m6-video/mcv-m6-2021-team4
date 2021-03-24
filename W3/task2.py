@@ -34,7 +34,7 @@ def eval_tracking_sort(vidcap, test_len, params):
 
     mot_tracker = Sort()
 
-    for t in tqdm(range((train_len + test_len) - first_frame_id)):
+    for t2 in tqdm(range((train_len + test_len) - first_frame_id)):
         _, frame = vidcap.read()
         # cv2.imshow('Frame', frame)
         # keyboard = cv2.waitKey(30)
@@ -67,12 +67,12 @@ def eval_tracking_sort(vidcap, test_len, params):
   
         for object_bb in det_bboxes:
             if object_bb.id in list(list_positions.keys()):
-                if t< 5:
+                if t2 < 5:
                     id_seen_last5frames[object_bb.id] = object_bb.id
                     center_seen_last5frames[object_bb.id] = object_bb.center
                 list_positions[object_bb.id].append([int(x) for x in object_bb.center])
             else:
-                if t< 5:
+                if (t2 < 5):
                     id_seen_last5frames[object_bb.id] = object_bb.id
                     center_seen_last5frames[object_bb.id] = object_bb.center
                 id_seen.append(object_bb)
@@ -84,8 +84,8 @@ def eval_tracking_sort(vidcap, test_len, params):
                 if idx != bbox.id:
                     center = [center_seen_last5frames[object_bb.id]]
                     mse = (np.square(np.subtract(np.array(center),np.array([int(x) for x in bbox.center])))).mean()
-                    if mse < 300:
-                        setattr(bbox, 'id', idx)
+                    # if mse < 300:
+                        # setattr(bbox, 'id', idx)
                 # list_positions_kalman_estimations[idx].append(center)
 
 
@@ -100,7 +100,7 @@ def eval_tracking_sort(vidcap, test_len, params):
         )
 
         # if params['show_boxes']:
-        if False:
+        if True:
             # frame = draw_boxes(image=frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False, tracker= list_positions)
             frame = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True,
                                tracker=list_positions)
@@ -224,6 +224,97 @@ def eval_tracking(vidcap, test_len, params):
     summary = mh.compute(accumulator, metrics=['precision','recall','idp','idr','idf1'], name='acc')
     print(summary)
 
+
+
+def eval_tracking_IOU(vidcap, test_len, params):
+    print("Evaluating Tracking")  
+    gt = read_annotations(params["gt_path"], grouped=True, use_parked=True)
+    det = read_detections(params["det_path"],grouped=True, confidenceThr=0.4)
+    frame_id = int(vidcap.get(cv2.CAP_PROP_POS_FRAMES))
+    first_frame_id = frame_id
+    print(frame_id)
+
+    detections = []
+    annotations = {}
+    list_positions = {}
+
+    center_seen_last5frames ={}
+    id_seen_last5frames = {}
+
+
+    tracking = Tracking()
+    det_bboxes_old = -1
+
+    # Create an accumulator that will be updated during each frame
+    accumulator = mm.MOTAccumulator(auto_id=True)
+
+    for t in tqdm(range((train_len + test_len) - first_frame_id)):
+
+        _ ,frame = vidcap.read()
+        # cv2.imshow('Frame', frame)
+        # keyboard = cv2.waitKey(30)
+
+        det_bboxes = det[frame_id]
+        det_bboxes = tracking.set_frame_ids(det_bboxes, det_bboxes_old)
+        detections += det_bboxes
+
+        id_seen = []
+        gt_bboxes = []
+        if frame_id in gt:
+            gt_bboxes = gt[frame_id]
+        annotations[frame_id] = gt_bboxes
+
+        objs = [bbox.center for bbox in gt_bboxes]
+        hyps = [bbox.center for bbox in det_bboxes]
+  
+        for object_bb in det_bboxes:
+            if object_bb.id in list(list_positions.keys()):
+                if t < 5:
+                    id_seen_last5frames[object_bb.id] = object_bb.id
+                    center_seen_last5frames[object_bb.id] = object_bb.center
+                list_positions[object_bb.id].append([int(x) for x in object_bb.center])
+            else:
+                if (t < 5):
+                    id_seen_last5frames[object_bb.id] = object_bb.id
+                    center_seen_last5frames[object_bb.id] = object_bb.center
+
+                id_seen.append(object_bb)
+                list_positions[object_bb.id] = [[int(x) for x in object_bb.center]]
+
+
+        for bbox in id_seen:
+            for idx in list(id_seen_last5frames.keys()):
+                if idx != bbox.id:
+                    center = [center_seen_last5frames[idx]]
+                    mse = (np.square(np.subtract(np.array(center),np.array([int(x) for x in bbox.center])))).mean()
+                    if mse < 300:
+                        setattr(bbox, 'id', idx)        
+
+        accumulator.update(
+            [bbox.id for bbox in gt_bboxes],             # Ground truth objects in this frame
+            [bbox.id for bbox in det_bboxes],            # Detector hypotheses in this frame
+            mm.distances.norm2squared_matrix(objs, hyps) # Distances from object 1 to hypotheses 1, 2, 3 and Distances from object 2 to hypotheses 1, 2, 3
+        )
+
+        if params['show_boxes']:
+            frame = draw_boxes(image=frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False, tracker= list_positions)
+            frame = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
+            # if not det_bboxes_old==-1:
+            #     frame = draw_boxes(image=frame, boxes=det_bboxes_old, color='r', linewidth=3, det=False, boxIds=True,old=True)
+            # frame = draw_boxes(image=frame, boxes=det_bboxes, color='g', linewidth=3, boxIds=False)
+            cv2.rectangle(frame, (10, 2), (120,20), (255,255,255), -1)
+            cv2.putText(frame, str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
+            cv2.imshow('Frame', frame)
+            keyboard = cv2.waitKey(30)
+
+        frame_id += 1
+        det_bboxes_old = det_bboxes
+
+    
+    mh = mm.metrics.create()
+    summary = mh.compute(accumulator, metrics=['precision','recall','idp','idr','idf1'], name='acc')
+    print(summary)
+
 if __name__ == "__main__":
 
     params = {
@@ -252,4 +343,5 @@ if __name__ == "__main__":
 
 
     # eval_tracking(vidcap, test_len, params)
-    eval_tracking_sort(vidcap, test_len, params)
+    # eval_tracking_sort(vidcap, test_len, params)
+    eval_tracking_IOU(vidcap, test_len, params)
