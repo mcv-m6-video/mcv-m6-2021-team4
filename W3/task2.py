@@ -17,7 +17,7 @@ import motmetrics as mm
 from sort import Sort
 
 
-def eval_tracking_sort(vidcap, test_len, params):
+def eval_tracking_sortKalman(vidcap, test_len, params):
     print("Evaluating Tracking")
     gt = read_annotations(params["gt_path"], grouped=True, use_parked=True)
     det = read_detections(params["det_path"], grouped=True, confidenceThr=0.4)
@@ -120,7 +120,7 @@ def eval_tracking_sort(vidcap, test_len, params):
     print(summary)
 
 
-def eval_tracking(vidcap, test_len, params):
+def eval_tracking_ourKalman(vidcap, test_len, params):
     print("Evaluating Tracking")  
     gt = read_annotations(params["gt_path"], grouped=True, use_parked=True)
     det = read_detections(params["det_path"],grouped=True, confidenceThr=0.4)
@@ -225,8 +225,7 @@ def eval_tracking(vidcap, test_len, params):
     print(summary)
 
 
-
-def eval_tracking_IOU(vidcap, test_len, params):
+def eval_tracking_MaximumOverlap(vidcap, test_len, params):
     print("Evaluating Tracking")  
     gt = read_annotations(params["gt_path"], grouped=True, use_parked=True)
     det = read_detections(params["det_path"],grouped=True, confidenceThr=0.4)
@@ -282,6 +281,7 @@ def eval_tracking_IOU(vidcap, test_len, params):
                 list_positions[object_bb.id] = [[int(x) for x in object_bb.center]]
 
 
+        # To detect pared cars
         for bbox in id_seen:
             for idx in list(id_seen_last5frames.keys()):
                 if idx != bbox.id:
@@ -297,7 +297,7 @@ def eval_tracking_IOU(vidcap, test_len, params):
         )
 
         if params['show_boxes']:
-            frame = draw_boxes(image=frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False, tracker= list_positions)
+            # frame = draw_boxes(image=frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False, tracker= list_positions)
             frame = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
             # if not det_bboxes_old==-1:
             #     frame = draw_boxes(image=frame, boxes=det_bboxes_old, color='r', linewidth=3, det=False, boxIds=True,old=True)
@@ -306,6 +306,9 @@ def eval_tracking_IOU(vidcap, test_len, params):
             cv2.putText(frame, str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
             cv2.imshow('Frame', frame)
             keyboard = cv2.waitKey(30)
+        
+        if params['save_results'] and frame_id >= (355+535) and frame_id < (410+535) : # if frame_id >= 535 and frame_id < 550
+            cv2.imwrite(params['results_path'] + f"tracking_{str(frame_id)}_IoU.jpg", frame.astype(int))
 
         frame_id += 1
         det_bboxes_old = det_bboxes
@@ -320,12 +323,12 @@ if __name__ == "__main__":
     params = {
         'video_path': "./data/vdo.avi",
         'gt_path': "./data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml",
-        'det_path': "./data/AICity_data/train/S03/c010/det/ian_detections.txt", #YOLO
+        'det_path': "./data/AICity_data/train/S03/c010/det/ian_detections.txt",
         # 'det_path': "./data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt", #MASK RCNN
         'roi_path': "./data/AICity_data/train/S03/c010/roi.jpg",
         'show_boxes': True,
         'sota_method': "MOG2",
-        'save_results': False,
+        'save_results': True,
         'results_path': "./W3/output/"
     }
 
@@ -342,6 +345,6 @@ if __name__ == "__main__":
     print("Test frames: ", test_len)
 
 
-    # eval_tracking(vidcap, test_len, params)
-    # eval_tracking_sort(vidcap, test_len, params)
-    eval_tracking_IOU(vidcap, test_len, params)
+    # eval_tracking_ourKalman(vidcap, test_len, params)
+    # eval_tracking_sortKalman(vidcap, test_len, params)
+    eval_tracking_MaximumOverlap(vidcap, test_len, params)
