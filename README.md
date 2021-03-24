@@ -62,3 +62,21 @@ The goal of this project is to:
 #### Task 4: Color sequences
 + Use multiple gaussians in different color spaces
 
+
+## Week 3
+#### Task 1: Object Detection
++ Off-the-shelf
+   + Faster R-CNN - Detectron2
+   + RetinaNet - Detectron2
+   + YOLOv3 - Pytorch
+   + Mask R-CNN - Keras
++ Fine-tune with our data
++ K-Fold Cross-Validation
+   + Strategy A - First 25% frames for training - second 75% for test.
+   + Strategy B - First 25% Train - last 75% Test (same as Strategy A).
+   + Strategy A - Random 25% Train - rest for Test
+
+#### Task 2: Object Tracking
++ Tracking by Maximum Overlap
++ Tracking with a Kalman Filter using [SORT]: https://github.com/abewley/sort and [2-D-Kalman-Filter]: https://github.com/RahmadSadli/2-D-Kalman-Filter
++ IDF1 score
