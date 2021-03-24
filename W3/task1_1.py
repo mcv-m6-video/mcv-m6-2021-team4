@@ -11,13 +11,14 @@ from detectron2.config import get_cfg
 from detectron2.utils.visualizer import Visualizer
 from detectron2.data import MetadataCatalog, DatasetCatalog
 
+import imageio
 import argparse
 from tqdm import tqdm
 
 sys.path.append('../W1')
 from aicity_reader import read_annotations, read_detections, group_by_frame
 from voc_evaluation import voc_eval
-from utils import draw_boxes
+from utils import draw_boxes, save_gif
 
 import task1_1_faster, task1_1_retina
 
@@ -25,14 +26,6 @@ model_detect = {
     'faster' : task1_1_faster.detect,
     'retina' : task1_1_retina.detect
 }
-
-detection_paths = {
-    'faster' : 'results/task1_1/faster/faster_rcnn_R_50_FPN_3x/detections.txt',
-    'retina' : 'results/task1_1/retina/retinanet_R_50_FPN_3x/detections.txt',
-    'yolo' : 'results/task1_1/yolo/detections.txt',
-    'mask' : 'results/task1_1/mask/detections.txt'
-}
-
 
 def get_test_subset(annotations, num_frames=2141, test_perc=0.75):
     initial_test_frame = int((1-test_perc) * num_frames)
@@ -68,6 +61,9 @@ def parse_args(args=sys.argv[1:]):
     parser.add_argument('--visualize', action='store_true',
                         help='show groundtruth and detections for each frame')
 
+    parser.add_argument('--create_gif', action='store_true',
+                        help='create gif using groundtruth and detections for each frame')
+
     parser.add_argument('--evaluate', action='store_true',
                         help='evaluate the detections')
 
@@ -76,14 +72,10 @@ def parse_args(args=sys.argv[1:]):
 
 
 def filter_by_conf(detections, conf_thr=0.5):
-    print(conf_thr)
     filtered_detections = []
     for det in detections:
         if det.confidence >= conf_thr:
             filtered_detections.append(det)
-
-    print(len(detections))
-    print(len(filtered_detections))
 
     return filtered_detections
 
@@ -92,7 +84,7 @@ def filter_by_conf(detections, conf_thr=0.5):
 if __name__ == '__main__':
     args = parse_args()
 
-    det_path = detection_paths[args.model]
+    det_path = 'results/task1_1/' + args.model + '/detections.txt'
 
     if args.detect:
         det_path = model_detect[args.model](args.video_path)
@@ -104,20 +96,45 @@ if __name__ == '__main__':
         det = group_by_frame(filter_by_conf(det, conf_thr=args.min_conf))
 
         vidcap = cv2.VideoCapture(args.video_path)
-        # vidcap.set(cv2.CAP_PROP_POS_FRAMES, frame_id)  # to start from frame #frame_id
+        # vidcap.set(cv2.CAP_PROP_POS_FRAMES, initial_frame)  # to start from frame #frame_id
         num_frames = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
 
         for frame_id in range(num_frames):
             _, frame = vidcap.read()
 
+            if frame_id >= 1755 and frame_id <= 1835:
+                frame = draw_boxes(frame, gt[frame_id], color='g')
+                frame = draw_boxes(frame, det[frame_id], color='b', det=True)
+
+                cv2.imshow('frame', frame)
+                if cv2.waitKey() == 113:  # press q to quit
+                    break
+
+        cv2.destroyAllWindows()
+
+    if args.create_gif:
+        gt = read_annotations(args.gt_path, grouped=True, use_parked=True)
+        det = read_detections(det_path, grouped=False)
+
+        det = group_by_frame(filter_by_conf(det, conf_thr=args.min_conf))
+
+        vidcap = cv2.VideoCapture(args.video_path)
+        initial_frame = 1755
+        final_frame = 1835
+        vidcap.set(cv2.CAP_PROP_POS_FRAMES, initial_frame)  # to start from frame #frame_id
+
+        video_output_path = det_path.split('.txt')[0] + '/'
+        os.makedirs(video_output_path, exist_ok=True)
+
+        for frame_id in tqdm(range(initial_frame, final_frame), desc='Saving frames to create a gif'):
+            _, frame = vidcap.read()
+
             frame = draw_boxes(frame, gt[frame_id], color='g')
             frame = draw_boxes(frame, det[frame_id], color='b', det=True)
 
-            cv2.imshow('frame', frame)
-            if cv2.waitKey() == 113:  # press q to quit
-                break
+            cv2.imwrite(video_output_path + '{}.png'.format(frame_id), frame)
 
-        cv2.destroyAllWindows()
+        save_gif(video_output_path, video_output_path.split('detections')[0] + 'detections.gif')
 
     if args.evaluate:
         gt = read_annotations(args.gt_path, grouped=False, use_parked=True)
