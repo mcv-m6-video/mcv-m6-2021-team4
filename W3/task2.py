@@ -28,6 +28,7 @@ def eval_tracking(vidcap, test_len, params):
     list_positions_kalman = {}
     list_positions_kalman_estimations = {}
     kalman_list={}
+    id_seen_last5frames = {}
     tracking = Tracking()
     det_bboxes_old = -1
 
@@ -51,6 +52,7 @@ def eval_tracking(vidcap, test_len, params):
         _ ,frame = vidcap.read()
         # cv2.imshow('Frame', frame)
         # keyboard = cv2.waitKey(30)
+        id_seen = []
 
         det_bboxes = det[frame_id]
         det_bboxes = tracking.set_frame_ids(det_bboxes, det_bboxes_old)
@@ -61,9 +63,7 @@ def eval_tracking(vidcap, test_len, params):
             gt_bboxes = gt[frame_id]
         annotations[frame_id] = gt_bboxes
 
-        objs = [bbox.center for bbox in gt_bboxes]
-        hyps = [bbox.center for bbox in det_bboxes]
-
+     
         
         for object_bb in det_bboxes:
             if object_bb.id in list(list_positions.keys()):
@@ -72,13 +72,35 @@ def eval_tracking(vidcap, test_len, params):
                 list_positions[object_bb.id] = [[int(x) for x in object_bb.center]]
 
             if object_bb.id in list(list_positions_kalman_estimations.keys()):
+                if t< 5:
+                    id_seen_last5frames[object_bb.id] = object_bb.id
                 kalman_list[object_bb.id].update( np.matrix([[int(object_bb.center[0])], [int(object_bb.center[1])]]) )
                 list_positions_kalman_estimations[object_bb.id].append([int(x.max()) for x in kalman_list[object_bb.id].predict()])
                 # list_positions_kalman_estimations[object_bb.id].append([int(x.max()) for x in kalman_list[object_bb.id].update( np.matrix([[int(object_bb.center[0])], [int(object_bb.center[1])]]) ) ])
             else:
-                
+                if t< 5:
+                    id_seen_last5frames[object_bb.id] = object_bb.id
+                id_seen.append(object_bb)
                 kalman_list[object_bb.id] = Kalman.KalmanFilter(0.1, 1, 1, 1, 0.1,0.1)
                 list_positions_kalman_estimations[object_bb.id] = [[int(x.max()) for x in kalman_list[object_bb.id].update( np.matrix([[int(object_bb.center[0])], [int(object_bb.center[1])]]) ) ]]
+
+
+        # if (t%250) == 0:
+        #     id_seen_last5frames = {}
+
+        else :
+            for bbox in id_seen:
+                for idx in list(id_seen_last5frames.keys()):
+                    if idx != bbox.id:
+                        center = [int(x.max()) for x in kalman_list[idx].predict()]
+                        mse = (np.square(np.subtract(np.array(center),np.array([int(x) for x in bbox.center])))).mean()
+                        if mse < 300:
+                            setattr(bbox, 'id', idx)
+                    # list_positions_kalman_estimations[idx].append(center)
+
+        objs = [bbox.center for bbox in gt_bboxes]
+        hyps = [bbox.center for bbox in det_bboxes]
+
 
         accumulator.update(
             [bbox.id for bbox in gt_bboxes],             # Ground truth objects in this frame
@@ -86,20 +108,20 @@ def eval_tracking(vidcap, test_len, params):
             mm.distances.norm2squared_matrix(objs, hyps) # Distances from object 1 to hypotheses 1, 2, 3 and Distances from object 2 to hypotheses 1, 2, 3
         )
 
-        if params['show_boxes']:
+        # if params['show_boxes']:
 
-            frame = draw_boxes(image=frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False, tracker= list_positions, kalman_predictions=list_positions_kalman_estimations)
-            frame = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions, kalman_predictions=list_positions_kalman_estimations)
+        #     frame = draw_boxes(image=frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False, tracker= list_positions, kalman_predictions=list_positions_kalman_estimations)
+        #     frame = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions, kalman_predictions=list_positions_kalman_estimations)
 
-            # frame = draw_boxes(image=frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False, tracker= list_positions)
-            # frame = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
-            # if not det_bboxes_old==-1:
-            #     frame = draw_boxes(image=frame, boxes=det_bboxes_old,tracker =list_positions, color='r', linewidth=3, det=False, boxIds=True,old=True,kalman_predictions=list_positions_kalman_estimations)
-            # frame = draw_boxes(image=frame, boxes=det_bboxes, color='g', linewidth=3, boxIds=False)
-            cv2.rectangle(frame, (10, 2), (120,20), (255,255,255), -1)
-            cv2.putText(frame, str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
-            cv2.imshow('Frame', frame)
-            keyboard = cv2.waitKey(30)
+        #     # frame = draw_boxes(image=frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False, tracker= list_positions)
+        #     # frame = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
+        #     # if not det_bboxes_old==-1:
+        #     #     frame = draw_boxes(image=frame, boxes=det_bboxes_old,tracker =list_positions, color='r', linewidth=3, det=False, boxIds=True,old=True,kalman_predictions=list_positions_kalman_estimations)
+        #     # frame = draw_boxes(image=frame, boxes=det_bboxes, color='g', linewidth=3, boxIds=False)
+        #     cv2.rectangle(frame, (10, 2), (120,20), (255,255,255), -1)
+        #     cv2.putText(frame, str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
+        #     cv2.imshow('Frame', frame)
+        #     keyboard = cv2.waitKey(30)
 
         frame_id += 1
         det_bboxes_old = det_bboxes
@@ -114,7 +136,7 @@ if __name__ == "__main__":
     params = {
         'video_path': "./data/vdo.avi",
         'gt_path': "./data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml",
-        'det_path': "./data/AICity_data/train/S03/c010/det/detections.txt", #YOLO
+        'det_path': "./data/AICity_data/train/S03/c010/det/ian_detections.txt", #YOLO
         # 'det_path': "./data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt", #MASK RCNN
         'roi_path': "./data/AICity_data/train/S03/c010/roi.jpg",
         'show_boxes': True,
@@ -130,7 +152,7 @@ if __name__ == "__main__":
     train_len = int(0.25*frame_count)
     test_len = frame_count-train_len
 
-    vidcap.set(cv2.CAP_PROP_POS_FRAMES, 900)
+    vidcap.set(cv2.CAP_PROP_POS_FRAMES, train_len)
 
     print("Train frames: ", train_len)
     print("Test frames: ", test_len)
