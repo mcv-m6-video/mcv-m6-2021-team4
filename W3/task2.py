@@ -26,6 +26,8 @@ def eval_tracking_sort(vidcap, test_len, params):
     print(frame_id)
 
     list_positions = {}
+    center_seen_last5frames ={}
+    id_seen_last5frames = {}
 
     # Create an accumulator that will be updated during each frame
     accumulator = mm.MOTAccumulator(auto_id=True)
@@ -36,7 +38,7 @@ def eval_tracking_sort(vidcap, test_len, params):
         _, frame = vidcap.read()
         # cv2.imshow('Frame', frame)
         # keyboard = cv2.waitKey(30)
-
+        id_seen = []
         gt_bboxes = []
         if frame_id in gt:
             gt_bboxes = gt[frame_id]
@@ -62,11 +64,30 @@ def eval_tracking_sort(vidcap, test_len, params):
                 parked=False
             ))
 
+  
         for object_bb in det_bboxes:
             if object_bb.id in list(list_positions.keys()):
+                if t< 5:
+                    id_seen_last5frames[object_bb.id] = object_bb.id
+                    center_seen_last5frames[object_bb.id] = object_bb.center
                 list_positions[object_bb.id].append([int(x) for x in object_bb.center])
             else:
+                if t< 5:
+                    id_seen_last5frames[object_bb.id] = object_bb.id
+                    center_seen_last5frames[object_bb.id] = object_bb.center
+                id_seen.append(object_bb)
                 list_positions[object_bb.id] = [[int(x) for x in object_bb.center]]
+
+     
+        for bbox in id_seen:
+            for idx in list(id_seen_last5frames.keys()):
+                if idx != bbox.id:
+                    center = [center_seen_last5frames[object_bb.id]]
+                    mse = (np.square(np.subtract(np.array(center),np.array([int(x) for x in bbox.center])))).mean()
+                    if mse < 300:
+                        setattr(bbox, 'id', idx)
+                # list_positions_kalman_estimations[idx].append(center)
+
 
         objs = [bbox.center for bbox in gt_bboxes]
         hyps = [bbox.center for bbox in det_bboxes]
