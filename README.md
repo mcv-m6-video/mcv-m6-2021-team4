@@ -78,5 +78,5 @@ The goal of this project is to:
 
 #### Task 2: Object Tracking
 + Tracking by Maximum Overlap
-+ Tracking with a Kalman Filter using [SORT]: https://github.com/abewley/sort and [2-D-Kalman-Filter]: https://github.com/RahmadSadli/2-D-Kalman-Filter
++ Tracking with a Kalman Filter using [SORT](https://github.com/abewley/sort) and [2-D-Kalman-Filter](https://github.com/RahmadSadli/2-D-Kalman-Filter)
 + IDF1 score
