@@ -99,4 +99,4 @@ def option2():
 
 def run():
     option1()
-    # option2()
+    option2()
