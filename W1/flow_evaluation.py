@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+import cv2
+
 def compute_msen(ground_truth, predicted, debug=True, visualize=True):
     """
     Mean Square Error in Non-occluded areas
@@ -21,15 +23,18 @@ def compute_msen(ground_truth, predicted, debug=True, visualize=True):
 
     if visualize:
         se[ground_truth[:, :, 2] == 0] = 0  # To exclude the non valid
+        plt.figure(figsize=(20,8))
         img_plot = plt.imshow(se)
         img_plot.set_cmap("nipy_spectral")
         plt.colorbar()
         plt.show()
 
-        # img_plot = plt.imshow(predicted)
-        # img_plot.set_cmap("nipy_spectral")
-        # plt.colorbar()
-        # plt.show()
+        predicted, _ = cv2.cartToPolar(predicted[:, :, 0], predicted[:, :, 1])
+        plt.figure(figsize=(20, 8))
+        img_plot = plt.imshow(predicted)
+        img_plot.set_cmap("nipy_spectral")
+        plt.colorbar()
+        plt.show()
 
     return msen, sen
 
