@@ -12,7 +12,7 @@ from utils import save_gif
 def parse_args(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Video stabilization using optical flow (block matching)')
 
-    parser.add_argument('--video_path', type=str, default='../data/video_stabilization/oscar_pc2.mp4')
+    parser.add_argument('--video_path', type=str, default='../data/video_stabilization/oscar_pc4.mp4')
 
     return parser.parse_args()
 
@@ -27,7 +27,7 @@ if __name__ == '__main__':
     stabilize_video = True
     smooth_trajectories = False
     visualize_stabilization = True
-    plot_corrections = False
+    plot_corrections = True
     create_gifs = False
 
     pkl_path = './pkls'
@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
 
     if stabilize_video:
-        trajectory_type = 'mean'  # median or mean
+        trajectory_type = 'median'  # median or mean
         with open(os.path.join(pkl_path, 'acc_'+trajectory_type+'_y_motion.pkl'), 'rb') as f:
             acc_y_motions = pickle.load(f)
 
@@ -106,6 +106,11 @@ if __name__ == '__main__':
                                      dtype=np.float32)
 
             frame_stab = cv2.warpAffine(frame, transl_matrix, (frame.shape[1], frame.shape[0]))
+
+            s = frame_stab.shape
+            T = cv2.getRotationMatrix2D((s[1]/2, s[0]/2), 0, 1.3)
+            frame = cv2.warpAffine(frame, T, (s[1], s[0]))
+            frame_stab = cv2.warpAffine(frame_stab, T, (s[1], s[0]))
 
             # mask = np.where(frame_stab==[0,0,0], 1, 0).astype(np.uint8)
             #
