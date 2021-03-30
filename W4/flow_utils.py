@@ -7,7 +7,7 @@ from flow_reader import read_flow
 from flow_evaluation import compute_msen, compute_pepn
 
 
-def plot_flow(img, flow, title, step=16):
+def plot_flow(img, flow, title='', step=16):
     h, w = img.shape[:2]
     X, Y = np.meshgrid(np.arange(0, w, 1), np.arange(0, h, 1))
     M = np.hypot(flow[:, :, 0], flow[:, :, 1])

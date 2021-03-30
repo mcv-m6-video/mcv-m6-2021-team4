@@ -53,10 +53,10 @@ def draw_boxes(image, boxes,tracker,  color='g', linewidth=2, det=False, boxIds=
        
     return image
 
-def save_gif(source_path, results_path):
+def save_gif(source_path, results_path, fps=10):
     # Build GIF
 
-    with imageio.get_writer(results_path, mode='I', fps=10) as writer:
+    with imageio.get_writer(results_path, mode='I', fps=fps) as writer:
         for filename in sorted(os.listdir(source_path)):
             image = imageio.imread(source_path + filename)
             writer.append_data(image)
