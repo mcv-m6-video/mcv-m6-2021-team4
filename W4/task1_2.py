@@ -3,8 +3,7 @@ from PIL import Image
 import time
 import numpy as np
 sys.path.append("W1")
-sys.path.append("W4/pyflow")
-import pyflow
+import pyflow.pyflow as pyflow
 from flow_evaluation import compute_pepn,compute_msen
 
 im1 = np.array(Image.open('data/000045_10.png'))
