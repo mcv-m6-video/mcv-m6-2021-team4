@@ -50,6 +50,11 @@ pepn = compute_pepn(gt, flow, sen, th=3)
 print('MSEN: ', msen)
 print('PEPN: ', pepn)
 
+# print(flow.shape)
+cv2.imwrite("W4/LK_result_U.png", flow[:,:,0])
+cv2.imwrite("W4/LK_result_V.png", flow[:,:,1])
+# cv2.imwrite("W4/LK_result.png", flow)
+
 # # Create some random colors
 # color = np.random.randint(0,255,(100,3))
 
