@@ -4,6 +4,8 @@ import sys
 sys.path.append("W1")
 from flow_evaluation import compute_msen, compute_pepn
 from flow_reader import read_flow
+import matplotlib.pyplot as plt
+
 
 
 
@@ -50,9 +52,47 @@ pepn = compute_pepn(gt, flow, sen, th=3)
 print('MSEN: ', msen)
 print('PEPN: ', pepn)
 
+U = flow[:, :, 0]
+V = flow[:, :, 1]
+
+X, Y = np.meshgrid(np.arange(0, flow.shape[1], 1),
+                    np.arange(0, flow.shape[0], 1))
+
+print(im1.shape)
+windowSize = 50
+
+u_new = np.zeros([im1.shape[0], im1.shape[1]])
+v_new = np.zeros([im1.shape[0], im1.shape[1]])
+
+print(u_new.shape)
+print(v_new.shape)
+
+for i in range(0, im1.shape[0]-windowSize, windowSize):
+    for j in range(0, im1.shape[1]-windowSize, windowSize):
+        # print(i, j)
+
+        u_mean = np.mean(U[i:i+windowSize, j:j+windowSize])
+        v_mean = np.mean(V[i:i+windowSize, j:j+windowSize])
+        
+        u_new[i+int(windowSize/2), int(j+windowSize/2)] = u_mean
+        v_new[i+int(windowSize/2), int(j+windowSize/2)] = v_mean
+        # print("MEAN: ", u_mean, v_mean)
+
+plt.figure()
+plt.title("pivot='tip'; scales with x view")
+M = np.hypot(u_new, v_new)
+Q = plt.quiver(X[::5, ::5], Y[::5, ::5], u_new[::5, ::5], v_new[::5, ::5], M[::5, ::5],
+                units='x', pivot='tail', width=3, scale=0.5)
+qk = plt.quiverkey(Q, 0.9, 0.9, 1, r'$1 \frac{m}{s}$',
+                    labelpos='E', coordinates='data')
+# plt.colorbar()
+plt.imshow(im1_gray, cmap='gray')
+# plt.savefig('task4_opt2_'+frame)    
+plt.show()
+
 # print(flow.shape)
-cv2.imwrite("W4/LK_result_U.png", flow[:,:,0])
-cv2.imwrite("W4/LK_result_V.png", flow[:,:,1])
+# cv2.imwrite("W4/LK_result_U.png", flow[:,:,0])
+# cv2.imwrite("W4/LK_result_V.png", flow[:,:,1])
 # cv2.imwrite("W4/LK_result.png", flow)
 
 # # Create some random colors
