@@ -76,9 +76,9 @@ class Tracking:
                     id_assigned.append(bb_to_assign)
                     setattr(det_bboxes_new[bb_to_assign], 'id', items[0])
 
-            for n in range(len(det_bboxes_new)):
-                if n not in id_assigned:
-                    setattr(det_bboxes_new[n], 'id', self.new_id())
+            # for n in range(len(det_bboxes_new)):
+            #     if n not in id_assigned:
+            #         setattr(det_bboxes_new[n], 'id', self.new_id())
 
 
                 #     
