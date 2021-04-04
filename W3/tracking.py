@@ -40,7 +40,14 @@ class Tracking:
                 match_found = False
                 
                 for bb_prev in det_bboxes_prev:
-                    iou = voc_iou_tracking(bb.box, bb_prev.box)
+
+                    if bb_prev.flow is not None:
+                        # print("Using Optical Flow")
+                        iou = voc_iou_tracking(bb.box, bb_prev.box_flow)
+                    else:
+                        # print("Not using Optical Flow")
+                        iou = voc_iou_tracking(bb.box, bb_prev.box)
+
 
                     if iou > max_iou:
                         match_found = True
