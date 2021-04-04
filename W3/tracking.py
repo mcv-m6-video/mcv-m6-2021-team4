@@ -43,7 +43,8 @@ class Tracking:
 
                     if bb_prev.flow is not None:
                         # print("Using Optical Flow")
-                        iou = voc_iou_tracking(bb.box, bb_prev.box_flow)
+                        bb_prev.apply_flow()
+                        iou = voc_iou_tracking(bb.box, bb_prev.box)
                     else:
                         # print("Not using Optical Flow")
                         iou = voc_iou_tracking(bb.box, bb_prev.box)
@@ -76,9 +77,9 @@ class Tracking:
                     id_assigned.append(bb_to_assign)
                     setattr(det_bboxes_new[bb_to_assign], 'id', items[0])
 
-            # for n in range(len(det_bboxes_new)):
-            #     if n not in id_assigned:
-            #         setattr(det_bboxes_new[n], 'id', self.new_id())
+            for n in range(len(det_bboxes_new)):
+                if n not in id_assigned:
+                    setattr(det_bboxes_new[n], 'id', self.new_id())
 
 
                 #     
