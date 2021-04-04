@@ -18,7 +18,7 @@ import motmetrics as mm
 import Kalman
 from sort import Sort
 
-def computeOpticalFlow_LK(old, new, detection, option=1):
+def computeOpticalFlow_LK(old, new, detection, option=2):
 
     # p0 = np.array([[x, y] for y in range(height) for x in range(width)], dtype=np.float32).reshape((-1, 1, 2))
     # p0 = []
@@ -42,38 +42,47 @@ def computeOpticalFlow_LK(old, new, detection, option=1):
         flow = np.reshape(flow, (width,height,2))
         flow = np.mean(flow, axis=(0,1))
         return flow
-    
+
     elif option == 2:
         '''
         OPTION 2: 
+            Aplicar el goodFeaturesToTrack a la detecció. 
+            Fer la mitja del optical flow dels goodFeaturesToTrack. 
+            Aplicar aquesta mitja a les 4 coordenades de la detecció. 
+            És més ràpid ja que no es calculan tants OF vectors a tants pixels.'''
+
+        # params for ShiTomasi corner detection
+        feature_params = dict( maxCorners = 100,
+                            qualityLevel = 0.3,
+                            minDistance = 7,
+                            blockSize = 7 )
+
+        old_gray = cv2.cvtColor(old, cv2.COLOR_BGR2GRAY)
+        good_points = cv2.goodFeaturesToTrack(old_gray[int(detection.xtl):int(detection.xbr), int(detection.ytl):int(detection.ybr)], mask = None, **feature_params)
+
+        if good_points is not None:
+            #Using good points when we have them
+            p0 = good_points
+        else:
+            #Computing the OF for all the pixels inside detection if we do not have good points.
+            height = int(detection.ybr - detection.ytl)
+            width =  int(detection.xbr - detection.xtl)
+            p0 = np.array([[x, y] for y in range(height) for x in range(width)], dtype=np.float32).reshape((-1, 1, 2))
+
+        p1, st, err = cv2.calcOpticalFlowPyrLK(old, new, p0, None, **lk_params)
+        flow = p1 - p0
+        flow[st == 0] = 0
+        # flow = np.reshape(flow, (int(detection.width),int(detection.height),2))
+        flow = np.mean(flow, axis=(0,1))
+        return flow
+    
+    elif option == 3:
+        '''
+        OPTION 3: 
             Agafar el optical flow del centroid (per asegurar que es part del cotxe) i sumar la standard desviation. 
             Aplicar aquesta mitja a les 4 coordenades de la detecció.'''
         pass
         
-    elif option == 3:
-        '''
-        OPTION 3: 
-            Aplicar el goodFeaturesToTrack a la detecció. 
-            Fer la mitja del optical flow dels goodFeaturesToTrack. 
-            Aplicar aquesta mitja a les 4 coordenades de la detecció. '''
-
-        # params for ShiTomasi corner detection
-        # feature_params = dict( maxCorners = 100,
-        #                     qualityLevel = 0.3,
-        #                     minDistance = 7,
-        #                     blockSize = 7 )
-
-        # old_gray = cv2.cvtColor(old, cv2.COLOR_BGR2GRAY)
-        # p0 = cv2.goodFeaturesToTrack(old_gray, mask = None, **feature_params)
-        # # p0 = [x+1 if x >= 45 else x+5 for x in l]
-        # p0 = [p for p in p0 if detection.point_inside_bbox(p)]
-        # p1, st, err = cv2.calcOpticalFlowPyrLK(old, new, p0, None, **lk_params)
-        # flow = p1 - p0
-        # flow[st == 0] = 0
-        # flow = np.reshape(flow, (width,height,2))
-        # flow = np.mean(flow, axis=(0,1))
-        # return flow
-        pass
     else:
         TypeError("Bad Option number on computeOpticalFlow_LK")
 
@@ -131,27 +140,27 @@ def eval_tracking_MaximumOverlap(vidcap, test_len, params, opticalFlow=None):
   
         for object_bb in det_bboxes:
             if object_bb.id in list(list_positions.keys()):
-                # if t < 5:
-                #     id_seen_last5frames[object_bb.id] = object_bb.id
-                #     center_seen_last5frames[object_bb.id] = object_bb.center
+                if t < 5:
+                    id_seen_last5frames[object_bb.id] = object_bb.id
+                    center_seen_last5frames[object_bb.id] = object_bb.center
                 list_positions[object_bb.id].append([int(x) for x in object_bb.center])
             else:
-                # if (t < 5):
-                #     id_seen_last5frames[object_bb.id] = object_bb.id
-                #     center_seen_last5frames[object_bb.id] = object_bb.center
+                if (t < 5):
+                    id_seen_last5frames[object_bb.id] = object_bb.id
+                    center_seen_last5frames[object_bb.id] = object_bb.center
 
                 id_seen.append(object_bb)
                 list_positions[object_bb.id] = [[int(x) for x in object_bb.center]]
 
 
         # To detect pared cars
-        # for bbox in id_seen:
-        #     for idx in list(id_seen_last5frames.keys()):
-        #         if idx != bbox.id:
-        #             center = [center_seen_last5frames[idx]]
-        #             mse = (np.square(np.subtract(np.array(center),np.array([int(x) for x in bbox.center])))).mean()
-        #             if mse < 300:
-        #                 setattr(bbox, 'id', idx)        
+        for bbox in id_seen:
+            for idx in list(id_seen_last5frames.keys()):
+                if idx != bbox.id:
+                    center = [center_seen_last5frames[idx]]
+                    mse = (np.square(np.subtract(np.array(center),np.array([int(x) for x in bbox.center])))).mean()
+                    if mse < 300:
+                        setattr(bbox, 'id', idx)        
 
         accumulator.update(
             [bbox.id for bbox in gt_bboxes],             # Ground truth objects in this frame
@@ -195,7 +204,7 @@ if __name__ == "__main__":
         'sota_method': "MOG2",
         'save_results': False,
         'results_path': "./W4/output/",
-        'use_optical_flow': True
+        'use_optical_flow': False
     }
 
     vidcap = cv2.VideoCapture(params['video_path'])

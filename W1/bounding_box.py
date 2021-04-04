@@ -14,11 +14,20 @@ class BoundingBox:
         self.occluded = occluded
         self.parked = parked
         self.confidence = confidence
+        self.flow = None
         # self.center_pos = self.center() # to compute parked cars
 
     @property
     def box(self):
         return [self.xtl, self.ytl, self.xbr, self.ybr]
+    
+    @property
+    def box_flow(self):
+        return [
+            self.xtl + self.flow[0], 
+            self.ytl + self.flow[1], 
+            self.xbr + self.flow[0], 
+            self.ybr + self.flow[1]]
 
     @property
     def center(self):
@@ -54,6 +63,13 @@ class BoundingBox:
         self.ybr = c[1] + h/2
         return
 
+    def point_inside_bbox(self, point):
+        '''point = [x,y]'''
+        if (point[0]>=self.xtl and point[0]<=self.xbr and point[1]>=self.ytl and point[1]<=self.ybr):
+            return True
+        else:
+            return False
+        
     # tmp name
     def inside_image(self):
         h, w = img_shape
