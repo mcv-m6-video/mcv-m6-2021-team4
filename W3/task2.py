@@ -346,6 +346,6 @@ if __name__ == "__main__":
     print("Test frames: ", test_len)
 
 
-    eval_tracking_ourKalman(vidcap, test_len, params)
-    # eval_tracking_sortKalman(vidcap, test_len, params)
+    # eval_tracking_ourKalman(vidcap, test_len, params)
+    eval_tracking_sortKalman(vidcap, test_len, params)
     # eval_tracking_MaximumOverlap(vidcap, test_len, params)
