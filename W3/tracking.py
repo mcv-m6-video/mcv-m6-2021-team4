@@ -43,8 +43,11 @@ class Tracking:
 
                     if bb_prev.flow is not None:
                         # print("Using Optical Flow")
-                        bb_prev.apply_flow()
-                        iou = voc_iou_tracking(bb.box, bb_prev.box)
+                        # bb_prev.apply_flow()
+                        # print("")
+                        # print(bb_prev.box)
+                        # print(bb_prev.box_flow)
+                        iou = voc_iou_tracking(bb.box, bb_prev.box_flow)
                     else:
                         # print("Not using Optical Flow")
                         iou = voc_iou_tracking(bb.box, bb_prev.box)
