@@ -23,6 +23,7 @@ class BoundingBox:
     
     @property
     def box_flow(self):
+        # print(self.flow[0], self.flow[1])
         return [
             self.xtl + self.flow[0], 
             self.ytl + self.flow[1], 
@@ -62,6 +63,12 @@ class BoundingBox:
         self.xbr = c[0] + w/2
         self.ybr = c[1] + h/2
         return
+
+    def apply_flow(self):
+        self.xtl += self.flow[0] 
+        self.ytl += self.flow[1] 
+        self.xbr += self.flow[0]
+        self.ybr += self.flow[1]
 
     def point_inside_bbox(self, point):
         '''point = [x,y]'''
