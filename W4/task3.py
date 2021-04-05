@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 import sys
+from pprint import pprint
 
 sys.path.append("W1")
 sys.path.append("W2")
@@ -13,12 +14,13 @@ from utils import draw_boxes
 from bg_postprocess import temporal_filter, postprocess_fg, discard_overlapping_bboxes
 from tracking import Tracking
 from flow_reader import read_flow
+from block_matching import estimate_flow
 
 import motmetrics as mm
 import Kalman
 from sort import Sort
 
-def computeOpticalFlow_LK(old, new, detection, option=2):
+def computeOpticalFlow(old, new, detection, option=1):
 
     # p0 = np.array([[x, y] for y in range(height) for x in range(width)], dtype=np.float32).reshape((-1, 1, 2))
     # p0 = []
@@ -33,12 +35,14 @@ def computeOpticalFlow_LK(old, new, detection, option=2):
         OPTION 1: 
             Agafar tots els punts dintre la detecció i fer la mitja. 
             Aplicar aquesta mitja a les 4 coordenades de la detecció.'''
+        # print("Option 1")
         height = int(detection.ybr - detection.ytl)
         width =  int(detection.xbr - detection.xtl)
         p0 = np.array([[x, y] for y in range(height) for x in range(width)], dtype=np.float32).reshape((-1, 1, 2))
         p1, st, err = cv2.calcOpticalFlowPyrLK(old, new, p0, None, **lk_params)
         flow = p1 - p0
         flow[st == 0] = 0
+        # flow[:,:,1] = - flow[:,:,1]
         flow = np.reshape(flow, (width,height,2))
         flow = np.mean(flow, axis=(0,1))
         return flow
@@ -51,6 +55,7 @@ def computeOpticalFlow_LK(old, new, detection, option=2):
             Aplicar aquesta mitja a les 4 coordenades de la detecció. 
             És més ràpid ja que no es calculan tants OF vectors a tants pixels.'''
 
+        # print("Option 2")
         # params for ShiTomasi corner detection
         feature_params = dict( maxCorners = 100,
                             qualityLevel = 0.3,
@@ -72,17 +77,71 @@ def computeOpticalFlow_LK(old, new, detection, option=2):
         p1, st, err = cv2.calcOpticalFlowPyrLK(old, new, p0, None, **lk_params)
         flow = p1 - p0
         flow[st == 0] = 0
+        flow[:,:,1] = - flow[:,:,1]
         # flow = np.reshape(flow, (int(detection.width),int(detection.height),2))
         flow = np.mean(flow, axis=(0,1))
         return flow
     
     elif option == 3:
-        '''
+        ''' 
         OPTION 3: 
-            Agafar el optical flow del centroid (per asegurar que es part del cotxe) i sumar la standard desviation. 
-            Aplicar aquesta mitja a les 4 coordenades de la detecció.'''
-        pass
-        
+            Agafar tots els punts dintre la detecció i fer la mediana. 
+            Aplicar aquesta mediana a les 4 coordenades de la detecció.'''
+        # print("Option 1")
+        height = int(detection.ybr - detection.ytl)
+        width =  int(detection.xbr - detection.xtl)
+        p0 = np.array([[x, y] for y in range(height) for x in range(width)], dtype=np.float32).reshape((-1, 1, 2))
+        p1, st, err = cv2.calcOpticalFlowPyrLK(old, new, p0, None, **lk_params)
+        flow = p1 - p0
+        flow[st == 0] = 0
+        # flow[:,:,1] = - flow[:,:,1]
+        flow = np.reshape(flow, (width,height,2))
+        flow = np.median(flow, axis=(0,1))
+        return flow
+    
+    elif option == 4:
+        '''
+        OPTION 4: 
+            Aplicar el goodFeaturesToTrack a la detecció. 
+            Fer la mitja del optical flow dels goodFeaturesToTrack. 
+            Aplicar aquesta mitja a les 4 coordenades de la detecció. 
+            És més ràpid ja que no es calculan tants OF vectors a tants pixels.'''
+
+        # print("Option 2")
+        # params for ShiTomasi corner detection
+        feature_params = dict( maxCorners = 100,
+                            qualityLevel = 0.3,
+                            minDistance = 7,
+                            blockSize = 7 )
+
+        old_gray = cv2.cvtColor(old, cv2.COLOR_BGR2GRAY)
+        good_points = cv2.goodFeaturesToTrack(old_gray[int(detection.xtl):int(detection.xbr), int(detection.ytl):int(detection.ybr)], mask = None, **feature_params)
+
+        if good_points is not None:
+            #Using good points when we have them
+            p0 = good_points
+        else:
+            #Computing the OF for all the pixels inside detection if we do not have good points.
+            height = int(detection.ybr - detection.ytl)
+            width =  int(detection.xbr - detection.xtl)
+            p0 = np.array([[x, y] for y in range(height) for x in range(width)], dtype=np.float32).reshape((-1, 1, 2))
+
+        p1, st, err = cv2.calcOpticalFlowPyrLK(old, new, p0, None, **lk_params)
+        flow = p1 - p0
+        flow[st == 0] = 0
+        flow[:,:,1] = - flow[:,:,1]
+        # flow = np.reshape(flow, (int(detection.width),int(detection.height),2))
+        flow = np.median(flow, axis=(0,1))
+        return flow
+
+    elif option == 5:
+        '''
+        OPTION 5: Using Block Matching --> Very Slow
+        '''
+        flow = estimate_flow('forward', 16, 32, 'ncc', old, new)
+        flow = np.mean(flow, axis=(0,1))
+        return flow
+
     else:
         TypeError("Bad Option number on computeOpticalFlow_LK")
 
@@ -122,7 +181,7 @@ def eval_tracking_MaximumOverlap(vidcap, test_len, params, opticalFlow=None):
                 # print(d)
                 flow = None
                 # print("Computing optical flow")
-                flow = computeOpticalFlow_LK(old_frame, frame, d)
+                flow = computeOpticalFlow(old_frame, frame, d, option=params['optical_flow_option'])
                 d.flow = flow
 
         det_bboxes = det[frame_id]
@@ -173,7 +232,7 @@ def eval_tracking_MaximumOverlap(vidcap, test_len, params, opticalFlow=None):
             # frame = draw_boxes(image=drawed_frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False, tracker= list_positions)
             drawed_frame = draw_boxes(image=drawed_frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
             # if not det_bboxes_old==-1:
-            #     drawed_frame = draw_boxes(image=drawed_frame, boxes=det_bboxes_old, color='r', linewidth=3, det=False, boxIds=True,old=True)
+            #     drawed_frame = draw_boxes(image=drawed_frame, boxes=det_bboxes_old, tracker = list_positions, color='r', linewidth=3, det=False, boxIds=True,old=True)
             # drawed_frame = draw_boxes(image=drawed_frame, boxes=det_bboxes, color='g', linewidth=3, boxIds=False)
             cv2.rectangle(drawed_frame, (10, 2), (120,20), (255,255,255), -1)
             cv2.putText(drawed_frame, str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
@@ -181,7 +240,7 @@ def eval_tracking_MaximumOverlap(vidcap, test_len, params, opticalFlow=None):
             keyboard = cv2.waitKey(30)
         
         if params['save_results'] and frame_id >= (355+535) and frame_id < (410+535) : # if frame_id >= 535 and frame_id < 550
-            cv2.imwrite(params['results_path'] + f"tracking_{str(frame_id)}_IoU.jpg", drawed_frame.astype(int))
+            cv2.imwrite(params['results_path'] + f"tracking_opt{params['optical_flow_option']}_{str(frame_id)}_IoU.jpg", drawed_frame.astype(int))
 
         frame_id += 1
         old_frame = frame
@@ -200,12 +259,15 @@ if __name__ == "__main__":
         'det_path': "./data/AICity_data/train/S03/c010/det/ian_detections.txt",
         # 'det_path': "./data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt", #MASK RCNN
         'roi_path': "./data/AICity_data/train/S03/c010/roi.jpg",
-        'show_boxes': False,
+        'show_boxes': True,
         'sota_method': "MOG2",
-        'save_results': False,
+        'save_results': True,
         'results_path': "./W4/output/",
-        'use_optical_flow': False
+        'use_optical_flow': True,
+        'optical_flow_option': 3,
     }
+
+
 
     vidcap = cv2.VideoCapture(params['video_path'])
     frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -219,7 +281,6 @@ if __name__ == "__main__":
     print("Train frames: ", train_len)
     print("Test frames: ", test_len)
 
+    pprint(params)
 
-    # eval_tracking_ourKalman(vidcap, test_len, params)
-    # eval_tracking_sortKalman(vidcap, test_len, params)
     eval_tracking_MaximumOverlap(vidcap, test_len, params)
