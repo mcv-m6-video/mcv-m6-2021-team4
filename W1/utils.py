@@ -23,7 +23,7 @@ colors = {
 color_ids = {}
 
 
-def draw_boxes(image, boxes,tracker,  color='g', linewidth=2, det=False, boxIds=False,old=False):
+def draw_boxes(image, boxes, tracker,  color='g', linewidth=2, det=False, boxIds=False, old=False):
     rgb = colors[color]
     for box in boxes:
         # print(box.id)
@@ -58,8 +58,10 @@ def save_gif(source_path, results_path, fps=10):
 
     with imageio.get_writer(results_path, mode='I', fps=fps) as writer:
         for filename in sorted(os.listdir(source_path)):
-            image = imageio.imread(source_path + filename)
-            writer.append_data(image)
+            if filename[0] != ".":
+                # print(source_path + filename)
+                image = imageio.imread(source_path + filename)
+                writer.append_data(image)
 
 
 def plot_3D(results_path):
