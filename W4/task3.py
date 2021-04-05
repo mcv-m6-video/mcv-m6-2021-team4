@@ -138,7 +138,7 @@ def computeOpticalFlow(old, new, detection, option=1):
         '''
         OPTION 5: Using Block Matching --> Very Slow
         '''
-        flow = estimate_flow('forward', 16, 32, 'ncc', old, new)
+        flow = estimate_flow('forward', 16, 32, 'ncc', old[detection.ytl:detection.ybr, detection.xtl:detection.xbr], new)
         flow = np.mean(flow, axis=(0,1))
         return flow
 
@@ -240,7 +240,7 @@ def eval_tracking_MaximumOverlap(vidcap, test_len, params, opticalFlow=None):
             keyboard = cv2.waitKey(30)
         
         if params['save_results'] and frame_id >= (355+535) and frame_id < (410+535) : # if frame_id >= 535 and frame_id < 550
-            cv2.imwrite(params['results_path'] + f"tracking_opt{params['optical_flow_option']}_{str(frame_id)}_IoU.jpg", drawed_frame.astype(int))
+            cv2.imwrite(params['results_path'] + f"tracking_{str(frame_id)}_IoU.jpg", drawed_frame.astype(int))
 
         frame_id += 1
         old_frame = frame
@@ -261,8 +261,8 @@ if __name__ == "__main__":
         'roi_path': "./data/AICity_data/train/S03/c010/roi.jpg",
         'show_boxes': True,
         'sota_method': "MOG2",
-        'save_results': True,
-        'results_path': "./W4/output/",
+        'save_results': False,
+        'results_path': "./W4/outout/",
         'use_optical_flow': True,
         'optical_flow_option': 3,
     }

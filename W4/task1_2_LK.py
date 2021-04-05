@@ -7,12 +7,15 @@ from flow_reader import read_flow
 import matplotlib.pyplot as plt
 
 
-
-
+compute_LK_OF(path_image1, path_image2, path_gt)
 gt = read_flow("data/of_ground_truth/000045_10.png")
 
 im1 = cv2.imread('data/000045_10.png')
 im2 = cv2.imread('data/000045_11.png')
+
+im1 = cv2.imread('data/vlcsnap-2021-04-04-19h56m36s549.png')
+im2 = cv2.imread('data/vlcsnap-2021-04-04-19h56m38s394.png')
+
 im1_gray = cv2.cvtColor(im1, cv2.COLOR_BGR2GRAY)
 im2_gray = cv2.cvtColor(im2, cv2.COLOR_BGR2GRAY)
 
@@ -43,14 +46,18 @@ mask = np.zeros_like(im1_gray)
 
 # calculate optical flow
 p1, st, err = cv2.calcOpticalFlowPyrLK(im1_gray, im2_gray, p0, None, **lk_params)
+p0 = p0.reshape((height, width, 2))
+p1 = p1.reshape((height, width, 2))
+st = st.reshape((height, width))
+
 flow = p1 - p0
 flow[st == 0] = 0
-flow = np.reshape(flow, (376,1241,2))
+# flow = np.reshape(flow, (im1.shape[0],im1.shape[1],2))
 
-msen, sen = compute_msen(gt, flow, debug=False, visualize=False)
-pepn = compute_pepn(gt, flow, sen, th=3)
-print('MSEN: ', msen)
-print('PEPN: ', pepn)
+# msen, sen = compute_msen(gt, flow, debug=False, visualize=False)
+# pepn = compute_pepn(gt, flow, sen, th=3)
+# print('MSEN: ', msen)
+# print('PEPN: ', pepn)
 
 U = flow[:, :, 0]
 V = flow[:, :, 1]
@@ -136,3 +143,6 @@ plt.show()
 
 # cv2.destroyAllWindows()
 # cap.release()
+
+if __name__ == "__main__":
+    compute_LK_OF(path_image1, path_image2)
