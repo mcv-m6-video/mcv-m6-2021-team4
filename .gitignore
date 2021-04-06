@@ -11,3 +11,5 @@ W4/csv
 data/vdo.avi
 data/AICity_data
 output
+output_noOF
+.DS_Store
