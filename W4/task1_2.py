@@ -1,120 +1,108 @@
-import sys
+import os, sys, time, cv2, argparse
 from PIL import Image
-import time
 import numpy as np
-import matplotlib.pyplot as plt
-from os import path
-sys.path.append("W1")
+sys.path.append("../W1")
 import pyflow.pyflow as pyflow
-from flow_evaluation import compute_pepn,compute_msen
-from flow_reader import read_flow
-import cv2
+from flow_evaluation import evaluate_flow
+from flow_utils import plot_flow
+
+sys.path.append("MaskFlownet")
+from predict_new_data import flow_maskflownet
+
+sys.path.append("RAFT")
+from demo import flow_raft
 
 
-im1 = np.array(Image.open('data/000045_10.png'))
-im2 = np.array(Image.open('data/000045_11.png'))
-im1 = im1.astype(float) / 255.
-im2 = im2.astype(float) / 255.
+def flow_LK(img_prev, img_next):
 
-# Flow Options:
-alpha = 0.012
-ratio = 0.75
-minWidth = 20
-nOuterFPIterations = 7
-nInnerFPIterations = 1
-nSORIterations = 30
-colType = 0  # 0 or default:RGB, 1:GRAY (but pass gray image with shape (h,w,1))
+    img_prev = cv2.cvtColor(img_prev, cv2.COLOR_BGR2GRAY)
+    img_next = cv2.cvtColor(img_next, cv2.COLOR_BGR2GRAY)
 
+    # Parameters for lucas kanade optical flow
+    lk_params = dict(winSize=(15, 15),
+                     maxLevel=2,
+                     criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
+    # Take all pixels
+    height, width = img_prev.shape[:2]
+    p0 = np.array([[x, y] for y in range(height) for x in range(width)], dtype=np.float32).reshape((-1, 1, 2))
 
+    start = time.time()
+    p1, st, err = cv2.calcOpticalFlowPyrLK(img_prev, img_next, p0, None, **lk_params)
+    end = time.time()
+    p0 = p0.reshape((height, width, 2))
+    p1 = p1.reshape((height, width, 2))
+    st = st.reshape((height, width))
 
-s = time.time()
-u, v, im2W = pyflow.coarse2fine_flow(
-    im1, im2, alpha, ratio, minWidth, nOuterFPIterations, nInnerFPIterations,
-    nSORIterations, colType)
-e = time.time()
-print('Time Taken: %.2f seconds for image of size (%d, %d, %d)' % (
-    e - s, im1.shape[0], im1.shape[1], im1.shape[2]))
-flow = np.concatenate((u[..., None], v[..., None]), axis=2)
-print(flow.shape)
-np.save('W4/outFlow.npy', flow)
+    flow = p1 - p0
+    flow[st == 0] = 0
 
-gt_path = "data/of_ground_truth"
-frame = "000045_10.png"
-
-gt = read_flow(path.join(gt_path, frame))
-
-X, Y = np.meshgrid(np.arange(0, gt.shape[1], 1), np.arange(0, gt.shape[0], 1))
-
-originalImage = cv2.imread('data/000045_10.png')
-grayImage = cv2.cvtColor(originalImage, cv2.COLOR_BGR2GRAY)
+    return flow, end-start
 
 
+def flow_pyflow(img_prev, img_next):
+    img_prev = img_prev.astype(float) / 255.
+    img_next = img_next.astype(float) / 255.
 
-print(originalImage.shape)
-windowSize = 50
+    # Flow Options:
+    alpha = 0.012
+    ratio = 0.75
+    minWidth = 20
+    nOuterFPIterations = 7
+    nInnerFPIterations = 1
+    nSORIterations = 30
+    colType = 0  # 0 or default:RGB, 1:GRAY (but pass gray image with shape (h,w,1))
 
-u_new = np.zeros([originalImage.shape[0], originalImage.shape[1]])
-v_new = np.zeros([originalImage.shape[0], originalImage.shape[1]])
+    start = time.time()
+    u, v, _ = pyflow.coarse2fine_flow(
+        img_prev, img_next, alpha, ratio, minWidth, nOuterFPIterations, nInnerFPIterations,
+        nSORIterations, colType)
+    end = time.time()
+    flow = np.concatenate((u[..., None], v[..., None]), axis=2)
 
-print(u_new.shape)
-print(v_new.shape)
-
-for i in range(0, originalImage.shape[0]-windowSize, windowSize):
-    for j in range(0, originalImage.shape[1]-windowSize, windowSize):
-        print(i, j)
-
-        u_mean = np.mean(u[i:i+windowSize, j:j+windowSize])
-        v_mean = np.mean(v[i:i+windowSize, j:j+windowSize])
-        
-        u_new[i+int(windowSize/2), int(j+windowSize/2)] = u_mean
-        v_new[i+int(windowSize/2), int(j+windowSize/2)] = v_mean
-        print("MEAN: ", u_mean, v_mean)
-
-plt.figure()
-plt.title("pivot='tip'; scales with x view")
-M = np.hypot(u_new, v_new)
-Q = plt.quiver(X[::5, ::5], Y[::5, ::5], u_new[::5, ::5], v_new[::5, ::5], M[::5, ::5],
-                units='x', pivot='tail', width=3, scale=0.5)
-qk = plt.quiverkey(Q, 0.9, 0.9, 1, r'$1 \frac{m}{s}$',
-                    labelpos='E', coordinates='data')
-# plt.colorbar()
-plt.imshow(grayImage, cmap='gray')
-# plt.savefig('task4_opt2_'+frame)    
-plt.show()
+    return flow, end-start
 
 
+estimate_flow = {
+    'pyflow': flow_pyflow,
+    'LK': flow_LK,
+    'maskflownet': flow_maskflownet,
+    'raft': flow_raft
+}
 
 
-if True:
-    # hsv = np.zeros(im1.shape, dtype=np.uint8)
-    # hsv[:, :, 0] = 255
-    # hsv[:, :, 1] = 255
-    # mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
-    # hsv[..., 0] = ang * 180 / np.pi / 2
-    # hsv[..., 2] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
-    # rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-    # cv2.imwrite('W4/outFlow_new.png', flow[:,:,0])
-    # cv2.imwrite('W4/outFlow_new1.png', flow[:,:,1])
-    cv2.imwrite('W4/outFlow_new.png', u)
-    cv2.imwrite('W4/outFlow_new1.png', v)
+def parse_args(args=sys.argv[1:]):
+    parser = argparse.ArgumentParser(description='Block matching algorithm to estimate optical flow')
 
+    parser.add_argument('--gt_path', type=str, default='../data/of_ground_truth/000045_10.png',
+                        help='path to ground truth optical flow')
 
+    parser.add_argument('--data_path', type=str, default='../data/OF_color',
+                        help='path to folder containing images of interest')
 
+    parser.add_argument('--plot_flow', action='store_true',
+                        help='plot optical flow and error')
 
-def task3_1_2(gt_path, flow, frame):
-    print("Task 3 - Quantitative evaluation of optical flow")
+    parser.add_argument('--method', type=str, default='LK',
+                        choices=['pyflow', 'LK', 'maskflownet', 'raft'],
+                        help='')
 
-    gt = read_flow(path.join(gt_path, frame))
-    estimated_flow = flow
+    return parser.parse_args(args)
 
-    msen, sen = compute_msen(gt, estimated_flow)
-    pepn = compute_pepn(gt, estimated_flow, sen)
+from skimage import color
 
-    print(msen, pepn) # put the outputs nicer
+if __name__ == '__main__':
+    args = parse_args()
 
-    return msen, pepn, sen
+    img_prev = np.array(Image.open(os.path.join(args.data_path, '000045_10.png')))
+    img_next = np.array(Image.open(os.path.join(args.data_path, '000045_11.png')))
 
+    flow, runtime = estimate_flow[args.method](img_prev, img_next)
 
-msen, pepn, sen = task3_1_2(gt_path, flow, frame)
+    if args.plot_flow:
+        title = args.method + ' optical flow estimation'
+        plot_flow(color.rgb2gray(img_prev), flow, title)
 
+    msen, pepn = evaluate_flow(flow, args.gt_path, args.plot_flow)
+
+    print('MSEN: ', msen, ', PEPN(%): ', pepn, ', runtime(s): ', runtime)

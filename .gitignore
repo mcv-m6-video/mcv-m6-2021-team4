@@ -8,6 +8,8 @@ W3/yolo
 W3/.idea/
 W4/.idea/
 W4/csv
+W4/RAFT
+W4/MaskFlownet
 data/vdo.avi
 data/AICity_data
 output

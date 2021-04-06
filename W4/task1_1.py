@@ -5,7 +5,9 @@ import pandas as pd
 from itertools import product
 
 from block_matching import estimate_flow
-from flow_utils import evaluate_flow, plot_flow
+from flow_utils import plot_flow
+sys.path.append('../W1')
+from flow_evaluation import evaluate_flow
 
 def parse_args(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Block matching algorithm to estimate optical flow')

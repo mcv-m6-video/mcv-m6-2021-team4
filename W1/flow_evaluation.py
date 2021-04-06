@@ -1,7 +1,9 @@
+import cv2, sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-import cv2
+sys.path.append('../W1')
+from flow_reader import read_flow
 
 def compute_msen(ground_truth, predicted, debug=True, visualize=True):
     """
@@ -51,3 +53,12 @@ def compute_pepn(ground_truth, predicted, sen, th=3):
     pepn = (error_count / n_pixels_n) * 100
 
     return pepn
+
+
+def evaluate_flow(flow, gt_path, plot_error):
+    gt_flow = read_flow(gt_path)
+
+    msen, sen = compute_msen(gt_flow, flow, debug=False, visualize=plot_error)
+    pepn = compute_pepn(gt_flow, flow, sen)
+
+    return msen, pepn
