@@ -232,6 +232,7 @@ def eval_tracking_MaximumOverlap(vidcap, test_len, params, opticalFlow=None):
             # frame = draw_boxes(image=drawed_frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False, tracker= list_positions)
             drawed_frame = draw_boxes(image=drawed_frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
             # if not det_bboxes_old==-1:
+            #     drawed_frame = draw_boxes_old(image=drawed_frame, boxes=det_bboxes_old, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
             #     drawed_frame = draw_boxes(image=drawed_frame, boxes=det_bboxes_old, tracker = list_positions, color='r', linewidth=3, det=False, boxIds=True,old=True)
             # drawed_frame = draw_boxes(image=drawed_frame, boxes=det_bboxes, color='g', linewidth=3, boxIds=False)
             cv2.rectangle(drawed_frame, (10, 2), (120,20), (255,255,255), -1)
@@ -261,10 +262,10 @@ if __name__ == "__main__":
         'roi_path': "./data/AICity_data/train/S03/c010/roi.jpg",
         'show_boxes': True,
         'sota_method': "MOG2",
-        'save_results': False,
-        'results_path': "./W4/outout/",
-        'use_optical_flow': True,
-        'optical_flow_option': 5,
+        'save_results': True,
+        'results_path': "./W4/output_noOF_oldbb/",
+        'use_optical_flow': False,
+        'optical_flow_option': 3,
     }
 
 
