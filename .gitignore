@@ -14,4 +14,7 @@ data/vdo.avi
 data/AICity_data
 output
 output_noOF
+output_noOF_oldbb
+output_opt3
+
 .DS_Store
