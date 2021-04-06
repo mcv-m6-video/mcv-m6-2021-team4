@@ -19,6 +19,7 @@ from block_matching import estimate_flow
 import motmetrics as mm
 import Kalman
 from sort import Sort
+from flow_utils import plot_flow
 
 def computeOpticalFlow(old, new, detection, option=1):
 
@@ -96,6 +97,7 @@ def computeOpticalFlow(old, new, detection, option=1):
         flow[st == 0] = 0
         # flow[:,:,1] = - flow[:,:,1]
         flow = np.reshape(flow, (width,height,2))
+        plot_flow(old, flow)
         flow = np.median(flow, axis=(0,1))
         return flow
     
@@ -264,7 +266,7 @@ if __name__ == "__main__":
         'sota_method': "MOG2",
         'save_results': True,
         'results_path': "./W4/output_noOF_oldbb/",
-        'use_optical_flow': False,
+        'use_optical_flow': True,
         'optical_flow_option': 3,
     }
 
