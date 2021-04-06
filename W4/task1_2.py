@@ -5,6 +5,7 @@ sys.path.append("../W1")
 import pyflow.pyflow as pyflow
 from flow_evaluation import evaluate_flow
 from flow_utils import plot_flow
+import matplotlib.pyplot as plt
 
 sys.path.append("MaskFlownet")
 from predict_new_data import flow_maskflownet
@@ -103,6 +104,11 @@ if __name__ == '__main__':
         title = args.method + ' optical flow estimation'
         plot_flow(color.rgb2gray(img_prev), flow, title)
 
-    msen, pepn = evaluate_flow(flow, args.gt_path, args.plot_flow)
+    msen, pepn, sen = evaluate_flow(flow, args.gt_path, args.plot_flow)
+
+
+    plt.hist(x=sen,bins=50)
+    plt.savefig(args.method )
+    plt.clf()
 
     print('MSEN: ', msen, ', PEPN(%): ', pepn, ', runtime(s): ', runtime)
