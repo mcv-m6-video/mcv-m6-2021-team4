@@ -136,10 +136,10 @@ def computeOpticalFlow(old, new, detection, option=1):
 
     elif option == 5:
         '''
-        OPTION 5: Using Block Matching --> Very Slow
+        OPTION 5: Using Block Matching
         '''
-        flow = estimate_flow('forward', 16, 32, 'ncc', old[detection.ytl:detection.ybr, detection.xtl:detection.xbr], new)
-        flow = np.mean(flow, axis=(0,1))
+        flow = estimate_flow('forward', 16, 32, 'ncc', old[int(detection.ytl):int(detection.ybr), int(detection.xtl):int(detection.xbr)], new)
+        flow = np.median(flow, axis=(0,1))
         return flow
 
     else:
@@ -264,7 +264,7 @@ if __name__ == "__main__":
         'save_results': False,
         'results_path': "./W4/outout/",
         'use_optical_flow': True,
-        'optical_flow_option': 3,
+        'optical_flow_option': 5,
     }
 
 
