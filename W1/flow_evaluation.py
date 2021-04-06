@@ -63,4 +63,4 @@ def evaluate_flow(flow, gt_path, plot_error):
     msen, sen = compute_msen(gt_flow, flow, debug=False, visualize=plot_error)
     pepn = compute_pepn(gt_flow, flow, sen)
 
-    return msen, pepn
+    return msen, pepn, sen
