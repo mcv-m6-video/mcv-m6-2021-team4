@@ -28,6 +28,7 @@ def compute_msen(ground_truth, predicted, debug=True, visualize=True):
         plt.figure(figsize=(20,8))
         img_plot = plt.imshow(se)
         img_plot.set_cmap("nipy_spectral")
+        plt.title("Squared Error")
         plt.colorbar()
         plt.show()
 
@@ -35,6 +36,7 @@ def compute_msen(ground_truth, predicted, debug=True, visualize=True):
         plt.figure(figsize=(20, 8))
         img_plot = plt.imshow(predicted)
         img_plot.set_cmap("nipy_spectral")
+        plt.title("Predicted Optical flow")
         plt.colorbar()
         plt.show()
 
