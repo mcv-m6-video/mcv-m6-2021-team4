@@ -12,7 +12,8 @@ from utils import save_gif
 def parse_args(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Video stabilization using optical flow (block matching)')
 
-    parser.add_argument('--video_path', type=str, default='../data/video_stabilization/oscar_pc4.mp4')
+    parser.add_argument('--video_path', type=str, default='../data/video_stabilization/1.mp4')
+    parser.add_argument('--pkl_path', type=str, default='./pkls')
 
     return parser.parse_args()
 
@@ -26,13 +27,13 @@ if __name__ == '__main__':
     visualize_flow = False
     stabilize_video = True
     smooth_trajectories = False
-    visualize_stabilization = True
-    plot_corrections = True
-    create_gifs = False
-
-    pkl_path = './pkls'
+    visualize_stabilization = False
+    plot_corrections = False
+    create_gifs = True
 
     if compute_acc_motions:
+        os.makedirs(args.pkl_path, exist_ok=True)
+
         acc_mean_x_motion = [0]
         acc_mean_y_motion = [0]
 
@@ -59,25 +60,25 @@ if __name__ == '__main__':
 
             print(frame_id)
 
-        with open(os.path.join(pkl_path, 'acc_mean_y_motion.pkl'), 'wb') as f:
+        with open(os.path.join(args.pkl_path, 'acc_mean_y_motion.pkl'), 'wb') as f:
             pickle.dump(acc_mean_y_motion, f)
 
-        with open(os.path.join(pkl_path, 'acc_mean_x_motion.pkl'), 'wb') as f:
+        with open(os.path.join(args.pkl_path, 'acc_mean_x_motion.pkl'), 'wb') as f:
             pickle.dump(acc_mean_x_motion, f)
 
-        with open(os.path.join(pkl_path, 'acc_median_y_motion.pkl'), 'wb') as f:
+        with open(os.path.join(args.pkl_path, 'acc_median_y_motion.pkl'), 'wb') as f:
             pickle.dump(acc_median_y_motion, f)
 
-        with open(os.path.join(pkl_path, 'acc_median_x_motion.pkl'), 'wb') as f:
+        with open(os.path.join(args.pkl_path, 'acc_median_x_motion.pkl'), 'wb') as f:
             pickle.dump(acc_median_x_motion, f)
 
 
     if stabilize_video:
         trajectory_type = 'median'  # median or mean
-        with open(os.path.join(pkl_path, 'acc_'+trajectory_type+'_y_motion.pkl'), 'rb') as f:
+        with open(os.path.join(args.pkl_path, 'acc_'+trajectory_type+'_y_motion.pkl'), 'rb') as f:
             acc_y_motions = pickle.load(f)
 
-        with open(os.path.join(pkl_path, 'acc_'+trajectory_type+'_x_motion.pkl'), 'rb') as f:
+        with open(os.path.join(args.pkl_path, 'acc_'+trajectory_type+'_x_motion.pkl'), 'rb') as f:
             acc_x_motions = pickle.load(f)
 
         if smooth_trajectories:
@@ -107,10 +108,10 @@ if __name__ == '__main__':
 
             frame_stab = cv2.warpAffine(frame, transl_matrix, (frame.shape[1], frame.shape[0]))
 
-            s = frame_stab.shape
-            T = cv2.getRotationMatrix2D((s[1]/2, s[0]/2), 0, 1.3)
-            frame = cv2.warpAffine(frame, T, (s[1], s[0]))
-            frame_stab = cv2.warpAffine(frame_stab, T, (s[1], s[0]))
+            # s = frame_stab.shape
+            # T = cv2.getRotationMatrix2D((s[1]/2, s[0]/2), 0, 1.3)
+            # frame = cv2.warpAffine(frame, T, (s[1], s[0]))
+            # frame_stab = cv2.warpAffine(frame_stab, T, (s[1], s[0]))
 
             # mask = np.where(frame_stab==[0,0,0], 1, 0).astype(np.uint8)
             #
@@ -135,7 +136,7 @@ if __name__ == '__main__':
                     cv2.waitKey()
                     start_flag = False
                 else:
-                    cv2.waitKey(10)
+                    cv2.waitKey(1)
 
             if create_gifs:
                 scale = 0.3

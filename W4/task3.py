@@ -8,17 +8,12 @@ sys.path.append("W1")
 sys.path.append("W2")
 sys.path.append("W3")
 sys.path.append("W3/sort")
-from bounding_box import BoundingBox
 from aicity_reader import read_annotations, read_detections, group_by_frame
-from utils import draw_boxes
-from bg_postprocess import temporal_filter, postprocess_fg, discard_overlapping_bboxes
+from utils import draw_boxes, draw_boxes_old
 from tracking import Tracking
-from flow_reader import read_flow
 from block_matching import estimate_flow
 
 import motmetrics as mm
-import Kalman
-from sort import Sort
 from flow_utils import plot_flow
 
 def computeOpticalFlow(old, new, detection, option=1):
@@ -37,9 +32,12 @@ def computeOpticalFlow(old, new, detection, option=1):
             Agafar tots els punts dintre la detecció i fer la mitja. 
             Aplicar aquesta mitja a les 4 coordenades de la detecció.'''
         # print("Option 1")
-        height = int(detection.ybr - detection.ytl)
-        width =  int(detection.xbr - detection.xtl)
-        p0 = np.array([[x, y] for y in range(height) for x in range(width)], dtype=np.float32).reshape((-1, 1, 2))
+        height = int(detection.ybr) - int(detection.ytl)
+        width =  int(detection.xbr) - int(detection.xtl)
+        p0 = np.array([[x, y] for y in range(int(detection.ytl), int(detection.ybr)) for x in
+                       range(int(detection.xtl), int(detection.xbr))],
+                      dtype=np.float32).reshape((-1, 1, 2))
+
         p1, st, err = cv2.calcOpticalFlowPyrLK(old, new, p0, None, **lk_params)
         flow = p1 - p0
         flow[st == 0] = 0
@@ -64,16 +62,19 @@ def computeOpticalFlow(old, new, detection, option=1):
                             blockSize = 7 )
 
         old_gray = cv2.cvtColor(old, cv2.COLOR_BGR2GRAY)
-        good_points = cv2.goodFeaturesToTrack(old_gray[int(detection.xtl):int(detection.xbr), int(detection.ytl):int(detection.ybr)], mask = None, **feature_params)
+        good_points = cv2.goodFeaturesToTrack(old_gray[int(detection.ytl):int(detection.ybr), int(detection.xtl):int(detection.xbr)],
+                                              mask = None, **feature_params)
 
         if good_points is not None:
             #Using good points when we have them
             p0 = good_points
         else:
             #Computing the OF for all the pixels inside detection if we do not have good points.
-            height = int(detection.ybr - detection.ytl)
-            width =  int(detection.xbr - detection.xtl)
-            p0 = np.array([[x, y] for y in range(height) for x in range(width)], dtype=np.float32).reshape((-1, 1, 2))
+            height = int(detection.ybr) - int(detection.ytl)
+            width = int(detection.xbr) - int(detection.xtl)
+            p0 = np.array([[x, y] for y in range(int(detection.ytl), int(detection.ybr)) for x in
+                           range(int(detection.xtl), int(detection.xbr))],
+                          dtype=np.float32).reshape((-1, 1, 2))
 
         p1, st, err = cv2.calcOpticalFlowPyrLK(old, new, p0, None, **lk_params)
         flow = p1 - p0
@@ -89,16 +90,22 @@ def computeOpticalFlow(old, new, detection, option=1):
             Agafar tots els punts dintre la detecció i fer la mediana. 
             Aplicar aquesta mediana a les 4 coordenades de la detecció.'''
         # print("Option 1")
-        height = int(detection.ybr - detection.ytl)
-        width =  int(detection.xbr - detection.xtl)
-        p0 = np.array([[x, y] for y in range(height) for x in range(width)], dtype=np.float32).reshape((-1, 1, 2))
+        height = int(detection.ybr) - int(detection.ytl)
+        width = int(detection.xbr) - int(detection.xtl)
+        p0 = np.array([[x, y] for y in range(int(detection.ytl), int(detection.ybr)) for x in range(int(detection.xtl), int(detection.xbr))],
+                      dtype=np.float32).reshape((-1, 1, 2))
         p1, st, err = cv2.calcOpticalFlowPyrLK(old, new, p0, None, **lk_params)
         flow = p1 - p0
         flow[st == 0] = 0
         # flow[:,:,1] = - flow[:,:,1]
-        flow = np.reshape(flow, (width,height,2))
-        plot_flow(old, flow)
+        flow = np.reshape(flow, (height,width,2))
+        # if detection.id == 7:
+        #     flow_aux = np.zeros(shape=(old.shape[0], old.shape[1], 2))
+        #     flow_aux[int(detection.ytl):int(detection.ybr), int(detection.xtl):int(detection.xbr), :] = flow
+        #     plot_flow(old, flow_aux, step=16)
+            # print(flow)
         flow = np.median(flow, axis=(0,1))
+        # print('MEDIAN: ', flow)
         return flow
     
     elif option == 4:
@@ -117,16 +124,19 @@ def computeOpticalFlow(old, new, detection, option=1):
                             blockSize = 7 )
 
         old_gray = cv2.cvtColor(old, cv2.COLOR_BGR2GRAY)
-        good_points = cv2.goodFeaturesToTrack(old_gray[int(detection.xtl):int(detection.xbr), int(detection.ytl):int(detection.ybr)], mask = None, **feature_params)
+        good_points = cv2.goodFeaturesToTrack(old_gray[int(detection.ytl):int(detection.ybr), int(detection.xtl):int(detection.xbr)],
+                                              mask = None, **feature_params)
 
         if good_points is not None:
             #Using good points when we have them
             p0 = good_points
         else:
             #Computing the OF for all the pixels inside detection if we do not have good points.
-            height = int(detection.ybr - detection.ytl)
-            width =  int(detection.xbr - detection.xtl)
-            p0 = np.array([[x, y] for y in range(height) for x in range(width)], dtype=np.float32).reshape((-1, 1, 2))
+            height = int(detection.ybr) - int(detection.ytl)
+            width = int(detection.xbr) - int(detection.xtl)
+            p0 = np.array([[x, y] for y in range(int(detection.ytl), int(detection.ybr)) for x in
+                           range(int(detection.xtl), int(detection.xbr))],
+                          dtype=np.float32).reshape((-1, 1, 2))
 
         p1, st, err = cv2.calcOpticalFlowPyrLK(old, new, p0, None, **lk_params)
         flow = p1 - p0
@@ -233,8 +243,8 @@ def eval_tracking_MaximumOverlap(vidcap, test_len, params, opticalFlow=None):
             drawed_frame = frame
             # frame = draw_boxes(image=drawed_frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False, tracker= list_positions)
             drawed_frame = draw_boxes(image=drawed_frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
-            # if not det_bboxes_old==-1:
-            #     drawed_frame = draw_boxes_old(image=drawed_frame, boxes=det_bboxes_old, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
+            if not det_bboxes_old==-1:
+                drawed_frame = draw_boxes_old(image=drawed_frame, boxes=det_bboxes_old, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
             #     drawed_frame = draw_boxes(image=drawed_frame, boxes=det_bboxes_old, tracker = list_positions, color='r', linewidth=3, det=False, boxIds=True,old=True)
             # drawed_frame = draw_boxes(image=drawed_frame, boxes=det_bboxes, color='g', linewidth=3, boxIds=False)
             cv2.rectangle(drawed_frame, (10, 2), (120,20), (255,255,255), -1)
@@ -262,10 +272,10 @@ if __name__ == "__main__":
         'det_path': "./data/AICity_data/train/S03/c010/det/ian_detections.txt",
         # 'det_path': "./data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt", #MASK RCNN
         'roi_path': "./data/AICity_data/train/S03/c010/roi.jpg",
-        'show_boxes': True,
+        'show_boxes': False,
         'sota_method': "MOG2",
         'save_results': True,
-        'results_path': "./W4/output_noOF_oldbb/",
+        'results_path': "./W4/OF_shifted_BB/",
         'use_optical_flow': True,
         'optical_flow_option': 3,
     }

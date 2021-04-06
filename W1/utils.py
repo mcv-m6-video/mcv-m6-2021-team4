@@ -53,13 +53,13 @@ def draw_boxes(image, boxes, tracker,  color='g', linewidth=2, det=False, boxIds
        
     return image
 
-# def draw_boxes_old(image, boxes, tracker,  color='g', linewidth=2, det=False, boxIds=False, old=False):
-#     rgb = colors[color]
-#     for box in boxes:
-#         # image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), rgb, linewidth)
-#         image = cv2.rectangle(image, (int(box.box_flow[0]), int(box.box_flow[1])), (int(box.box_flow[2]), int(box.box_flow[3])), rgb, linewidth)
+def draw_boxes_old(image, boxes, tracker,  color='g', linewidth=2, det=False, boxIds=False, old=False):
+    rgb = colors[color]
+    for box in boxes:
+        image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), colors['r'], linewidth)
+        image = cv2.rectangle(image, (int(box.box_flow[0]), int(box.box_flow[1])), (int(box.box_flow[2]), int(box.box_flow[3])), colors['b'], linewidth)
     
-#     return image
+    return image
 
 
 def save_gif(source_path, results_path, fps=10):
