@@ -106,9 +106,10 @@ if __name__ == '__main__':
 
     msen, pepn, sen = evaluate_flow(flow, args.gt_path, args.plot_flow)
 
-
-    plt.hist(x=sen,bins=50)
-    plt.savefig(args.method )
+    plt.hist(x=sen,bins=30)
+    plt.title(args.method)
+    plt.grid(True)
+    plt.savefig(args.method)
     plt.clf()
 
     print('MSEN: ', msen, ', PEPN(%): ', pepn, ', runtime(s): ', runtime)

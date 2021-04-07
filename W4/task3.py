@@ -16,6 +16,8 @@ from block_matching import estimate_flow
 import motmetrics as mm
 from flow_utils import plot_flow
 
+from copy import deepcopy
+
 def computeOpticalFlow(old, new, detection, option=1):
 
     # p0 = np.array([[x, y] for y in range(height) for x in range(width)], dtype=np.float32).reshape((-1, 1, 2))
@@ -97,13 +99,8 @@ def computeOpticalFlow(old, new, detection, option=1):
         p1, st, err = cv2.calcOpticalFlowPyrLK(old, new, p0, None, **lk_params)
         flow = p1 - p0
         flow[st == 0] = 0
-        # flow[:,:,1] = - flow[:,:,1]
+        flow[:,:,1] = - flow[:,:,1]
         flow = np.reshape(flow, (height,width,2))
-        # if detection.id == 7:
-        #     flow_aux = np.zeros(shape=(old.shape[0], old.shape[1], 2))
-        #     flow_aux[int(detection.ytl):int(detection.ybr), int(detection.xtl):int(detection.xbr), :] = flow
-        #     plot_flow(old, flow_aux, step=16)
-            # print(flow)
         flow = np.median(flow, axis=(0,1))
         # print('MEDIAN: ', flow)
         return flow
@@ -188,13 +185,20 @@ def eval_tracking_MaximumOverlap(vidcap, test_len, params, opticalFlow=None):
         # cv2.imshow('Frame', frame)
         # keyboard = cv2.waitKey(30)
 
+        flow_aux = np.zeros(shape=(frame.shape[0], frame.shape[1], 2))
+
         if params['use_optical_flow'] and old_frame is not None:
             for d in det_bboxes_old:
                 # print(d)
                 flow = None
                 # print("Computing optical flow")
                 flow = computeOpticalFlow(old_frame, frame, d, option=params['optical_flow_option'])
-                d.flow = flow
+                d.flow = [flow[0], -flow[1]]
+
+                flow_aux[int(d.ytl):int(d.ybr), int(d.xtl):int(d.xbr), :] = flow
+
+            plot_flow(old_frame[:, :, [2, 1, 0]], flow_aux, step=16,
+                      fname='/home/oscar/workspace/master/modules/m6/project/mcv-m6-2021-team4/W4/OF_BB/'+f"tracking_{str(frame_id)}_IoU.png")
 
         det_bboxes = det[frame_id]
         det_bboxes = tracking.set_frame_ids(det_bboxes, det_bboxes_old)
@@ -240,19 +244,38 @@ def eval_tracking_MaximumOverlap(vidcap, test_len, params, opticalFlow=None):
         )
 
         if params['show_boxes']:
-            drawed_frame = frame
-            # frame = draw_boxes(image=drawed_frame, boxes=gt_bboxes, color='w', linewidth=3, boxIds=False, tracker= list_positions)
-            drawed_frame = draw_boxes(image=drawed_frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
+            drawed_frame_aux = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
+            drawed_frame = deepcopy(drawed_frame_aux)
             if not det_bboxes_old==-1:
                 drawed_frame = draw_boxes_old(image=drawed_frame, boxes=det_bboxes_old, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
-            #     drawed_frame = draw_boxes(image=drawed_frame, boxes=det_bboxes_old, tracker = list_positions, color='r', linewidth=3, det=False, boxIds=True,old=True)
-            # drawed_frame = draw_boxes(image=drawed_frame, boxes=det_bboxes, color='g', linewidth=3, boxIds=False)
             cv2.rectangle(drawed_frame, (10, 2), (120,20), (255,255,255), -1)
             cv2.putText(drawed_frame, str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
             cv2.imshow('Frame', drawed_frame)
-            keyboard = cv2.waitKey(30)
+            cv2.waitKey(30)
+            cv2.imwrite(params['results_path'] + f"tracking_{str(frame_id)}_IoU.jpg", drawed_frame.astype(int))
+
+            drawed_frame2 = deepcopy(drawed_frame_aux)
+            if not det_bboxes_old == -1:
+                drawed_frame2 = draw_boxes_old(image=drawed_frame2, boxes=det_bboxes_old, color='r', linewidth=3,
+                                              det=False, boxIds=True, tracker=list_positions, shifted=True)
+            cv2.rectangle(drawed_frame2, (10, 2), (120, 20), (255, 255, 255), -1)
+            cv2.putText(drawed_frame2, str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                        (0, 0, 0))
+            cv2.imshow('Frame', drawed_frame2)
+            cv2.waitKey(30)
+            cv2.imwrite('./W4/OF_shifted_BB/' + f"tracking_{str(frame_id)}_IoU.jpg", drawed_frame2.astype(int))
         
         if params['save_results'] and frame_id >= (355+535) and frame_id < (410+535) : # if frame_id >= 535 and frame_id < 550
+            drawed_frame = frame
+            drawed_frame = draw_boxes(image=drawed_frame, boxes=det_bboxes, color='r', linewidth=3, det=False,
+                                      boxIds=True, tracker=list_positions)
+            if not det_bboxes_old == -1:
+                drawed_frame = draw_boxes_old(image=drawed_frame, boxes=det_bboxes_old, color='r', linewidth=3,
+                                              det=False, boxIds=True, tracker=list_positions)
+            cv2.rectangle(drawed_frame, (10, 2), (120, 20), (255, 255, 255), -1)
+            cv2.putText(drawed_frame, str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                        (0, 0, 0))
+
             cv2.imwrite(params['results_path'] + f"tracking_{str(frame_id)}_IoU.jpg", drawed_frame.astype(int))
 
         frame_id += 1
@@ -270,12 +293,11 @@ if __name__ == "__main__":
         'video_path': "./data/vdo.avi",
         'gt_path': "./data/AICity_data/train/S03/c010/ai_challenge_s03_c010-full_annotation.xml",
         'det_path': "./data/AICity_data/train/S03/c010/det/ian_detections.txt",
-        # 'det_path': "./data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt", #MASK RCNN
         'roi_path': "./data/AICity_data/train/S03/c010/roi.jpg",
-        'show_boxes': False,
+        'show_boxes': True,
         'sota_method': "MOG2",
-        'save_results': True,
-        'results_path': "./W4/OF_shifted_BB/",
+        'save_results': False,
+        'results_path': "./W4/OF_NOTshifted_BB/",
         'use_optical_flow': True,
         'optical_flow_option': 3,
     }
