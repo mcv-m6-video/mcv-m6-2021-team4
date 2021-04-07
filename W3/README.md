@@ -1,4 +1,4 @@
-# Week 2
+# Week 3
 
 * Task 1_1: Object Detection Off-the-shelf
 * Task 1_2: Fine tune architectures on AICity dataset
