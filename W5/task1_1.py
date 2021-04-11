@@ -198,8 +198,8 @@ def eval_tracking_MaximumOverlap(vidcap, test_len, params, video, opticalFlow=No
 
                 flow_aux[int(d.ytl):int(d.ybr), int(d.xtl):int(d.xbr), :] = flow
 
-            plot_flow(old_frame[:, :, [2, 1, 0]], flow_aux, step=16,
-                      fname='/home/oscar/workspace/master/modules/m6/project/mcv-m6-2021-team4/W4/OF_BB/'+f"tracking_{str(frame_id)}_IoU.png")
+            # plot_flow(old_frame[:, :, [2, 1, 0]], flow_aux, step=16,
+            #           fname='/home/oscar/workspace/master/modules/m6/project/mcv-m6-2021-team4/W4/OF_BB/'+f"tracking_{str(frame_id)}_IoU.png")
 
         det_bboxes = det[frame_id]
         det_bboxes = tracking.set_frame_ids(det_bboxes, det_bboxes_old)
@@ -247,8 +247,8 @@ def eval_tracking_MaximumOverlap(vidcap, test_len, params, video, opticalFlow=No
         if params['show_boxes']:
             drawed_frame_aux = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
             drawed_frame = deepcopy(drawed_frame_aux)
-            if not det_bboxes_old==-1:
-                drawed_frame = draw_boxes_old(image=drawed_frame, boxes=det_bboxes_old, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
+            # if not det_bboxes_old==-1:
+            #     drawed_frame = draw_boxes_old(image=drawed_frame, boxes=det_bboxes_old, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
             cv2.rectangle(drawed_frame, (10, 2), (120,20), (255,255,255), -1)
             cv2.putText(drawed_frame, str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
             cv2.imshow('Frame', drawed_frame)
@@ -256,9 +256,9 @@ def eval_tracking_MaximumOverlap(vidcap, test_len, params, video, opticalFlow=No
             cv2.imwrite(params['results_path'] + f"tracking_{str(frame_id)}_IoU.jpg", drawed_frame.astype(int))
 
             drawed_frame2 = deepcopy(drawed_frame_aux)
-            if not det_bboxes_old == -1:
-                drawed_frame2 = draw_boxes_old(image=drawed_frame2, boxes=det_bboxes_old, color='r', linewidth=3,
-                                              det=False, boxIds=True, tracker=list_positions, shifted=True)
+            # if not det_bboxes_old == -1:
+            #     drawed_frame2 = draw_boxes_old(image=drawed_frame2, boxes=det_bboxes_old, color='r', linewidth=3,
+            #                                   det=False, boxIds=True, tracker=list_positions, shifted=True)
             cv2.rectangle(drawed_frame2, (10, 2), (120, 20), (255, 255, 255), -1)
             cv2.putText(drawed_frame2, str(vidcap.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                         (0, 0, 0))
