@@ -16,5 +16,10 @@ output
 output_noOF
 output_noOF_oldbb
 output_opt3
-
+opt1
+opt2
 .DS_Store
+aic19-track1-mtmc-train
+AICity_data
+W3/sort
+W4/pyflow
