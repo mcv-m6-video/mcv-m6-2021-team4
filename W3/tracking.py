@@ -44,7 +44,9 @@ class Tracking:
                     if bb_prev.flow is not None:
                         # print("Using Optical Flow")
                         # bb_prev.apply_flow()
+                        # if(bb_prev.id == '194'):
                         # print("")
+                        # print(bb_prev.flow)
                         # print(bb_prev.box)
                         # print(bb_prev.box_flow)
                         iou = voc_iou_tracking(bb.box, bb_prev.box_flow)
