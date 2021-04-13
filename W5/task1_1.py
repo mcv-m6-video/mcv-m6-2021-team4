@@ -160,7 +160,8 @@ def eval_tracking_MaximumOverlap(vidcap, test_len, params, video, opticalFlow=No
 
     print("Evaluating Tracking")  
     gt = read_detections(video["gt_path"], grouped=True)
-    det = read_detections(video["det_path"],grouped=True, confidenceThr=0.4)
+    det = read_detections(video["det_path"], grouped=True)
+    # det = read_detections(video["det_path"],grouped=True, confidenceThr=0.4)
     frame_id = int(vidcap.get(cv2.CAP_PROP_POS_FRAMES))
     first_frame_id = frame_id
     print(frame_id)
@@ -201,7 +202,11 @@ def eval_tracking_MaximumOverlap(vidcap, test_len, params, video, opticalFlow=No
             # plot_flow(old_frame[:, :, [2, 1, 0]], flow_aux, step=16,
             #           fname='/home/oscar/workspace/master/modules/m6/project/mcv-m6-2021-team4/W4/OF_BB/'+f"tracking_{str(frame_id)}_IoU.png")
 
-        det_bboxes = det[frame_id]
+        try:
+            det_bboxes = det[frame_id]
+        except:    
+            det_bboxes = []
+
         det_bboxes = tracking.set_frame_ids(det_bboxes, det_bboxes_old)
         detections += det_bboxes
 
@@ -246,7 +251,9 @@ def eval_tracking_MaximumOverlap(vidcap, test_len, params, video, opticalFlow=No
 
         if params['show_boxes']:
             drawed_frame_aux = draw_boxes(image=frame, boxes=det_bboxes, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
+            drawed_frame_aux = draw_boxes(image=drawed_frame_aux, boxes=gt_bboxes, color='g', linewidth=3, boxIds=False, tracker= list_positions)
             drawed_frame = deepcopy(drawed_frame_aux)
+
             # if not det_bboxes_old==-1:
             #     drawed_frame = draw_boxes_old(image=drawed_frame, boxes=det_bboxes_old, color='r', linewidth=3, det=False, boxIds=True, tracker = list_positions)
             cv2.rectangle(drawed_frame, (10, 2), (120,20), (255,255,255), -1)
@@ -291,7 +298,6 @@ def eval_tracking_MaximumOverlap(vidcap, test_len, params, video, opticalFlow=No
 if __name__ == "__main__":
 
     params = {
-        'roi_path': "./data/AICity_data/train/S03/c010/roi.jpg",
         'show_boxes': True,
         'sota_method': "MOG2",
         'save_results': False,
@@ -305,50 +311,56 @@ if __name__ == "__main__":
             "video_path": "./aic19-track1-mtmc-train/train/S03/c010/vdo.avi",
             "roi_path": "./aic19-track1-mtmc-train/train/S03/c010/roi.jpg",
             "det_path": "./aic19-track1-mtmc-train/train/S03/c010/det/det_yolo3.txt",
+            # "det_path": "./aic19-track1-mtmc-train/train/S03/c010/gt/gt.txt",
             "gt_path": "./aic19-track1-mtmc-train/train/S03/c010/gt/gt.txt",
             "s_num": "S03",
             "c_num": "c010",
         },
-        # {
-        #     "video_path": "./aic19-track1-mtmc-train/train/S03/c011/vdo.avi",
-        #     "roi_path": "./aic19-track1-mtmc-train/train/S03/c011/roi.jpg",
-        #     "det_path": "./aic19-track1-mtmc-train/train/S03/c011/det/det_yolo3.txt",
-        #     "gt_path": "./aic19-track1-mtmc-train/train/S03/c011/gt/gt.txt",
-        #     "s_num": "S03",
-        #     "c_num": "c011",
-        # },
-        # {
-        #     "video_path": "./aic19-track1-mtmc-train/train/S03/c012/vdo.avi",
-        #     "roi_path": "./aic19-track1-mtmc-train/train/S03/c012/roi.jpg",
-        #     "det_path": "./aic19-track1-mtmc-train/train/S03/c012/det/det_yolo3.txt",
-        #     "gt_path": "./aic19-track1-mtmc-train/train/S03/c012/gt/gt.txt",
-        #     "s_num": "S03",
-        #     "c_num": "c012",
-        # },
-        # {
-        #     "video_path": "./aic19-track1-mtmc-train/train/S03/c013/vdo.avi",
-        #     "roi_path": "./aic19-track1-mtmc-train/train/S03/c013/roi.jpg",
-        #     "det_path": "./aic19-track1-mtmc-train/train/S03/c013/det/det_yolo3.txt",
-        #     "gt_path": "./aic19-track1-mtmc-train/train/S03/c013/gt/gt.txt",
-        #     "s_num": "S03",
-        #     "c_num": "c013",
-        # },
-        # {
-        #     "video_path": "./aic19-track1-mtmc-train/train/S03/c014/vdo.avi",
-        #     "roi_path": "./aic19-track1-mtmc-train/train/S03/c014/roi.jpg",
-        #     "det_path": "./aic19-track1-mtmc-train/train/S03/c014/det/det_yolo3.txt",
-        #     "gt_path": "./aic19-track1-mtmc-train/train/S03/c014/gt/gt.txt",
-        #     "s_num": "S03",
-        #     "c_num": "c014",
-        # },
-        # {
-        #     "video_path": "./aic19-track1-mtmc-train/train/S03/c015/vdo.avi",
-        #     "roi_path": "./aic19-track1-mtmc-train/train/S03/c015/roi.jpg",
-        #     "det_path": "./aic19-track1-mtmc-train/train/S03/c015/det/det_yolo3.txt",
-        #     "gt_path": "./aic19-track1-mtmc-train/train/S03/c015/gt/gt.txt",
-        #     "s_num": "S03",
-        #     "c_num": "c015",
-        # }
+        {
+            "video_path": "./aic19-track1-mtmc-train/train/S03/c011/vdo.avi",
+            "roi_path": "./aic19-track1-mtmc-train/train/S03/c011/roi.jpg",
+            "det_path": "./aic19-track1-mtmc-train/train/S03/c011/det/det_yolo3.txt",
+            # "det_path": "./aic19-track1-mtmc-train/train/S03/c011/gt/gt.txt",
+            "gt_path": "./aic19-track1-mtmc-train/train/S03/c011/gt/gt.txt",
+            "s_num": "S03",
+            "c_num": "c011",
+        },
+        {
+            "video_path": "./aic19-track1-mtmc-train/train/S03/c012/vdo.avi",
+            "roi_path": "./aic19-track1-mtmc-train/train/S03/c012/roi.jpg",
+            "det_path": "./aic19-track1-mtmc-train/train/S03/c012/det/det_yolo3.txt",
+            # "det_path": "./aic19-track1-mtmc-train/train/S03/c012/gt/gt.txt",
+            "gt_path": "./aic19-track1-mtmc-train/train/S03/c012/gt/gt.txt",
+            "s_num": "S03",
+            "c_num": "c012",
+        },
+        {
+            "video_path": "./aic19-track1-mtmc-train/train/S03/c013/vdo.avi",
+            "roi_path": "./aic19-track1-mtmc-train/train/S03/c013/roi.jpg",
+            "det_path": "./aic19-track1-mtmc-train/train/S03/c013/det/det_yolo3.txt",
+            # "det_path": "./aic19-track1-mtmc-train/train/S03/c013/gt/gt.txt",
+            "gt_path": "./aic19-track1-mtmc-train/train/S03/c013/gt/gt.txt",
+            "s_num": "S03",
+            "c_num": "c013",
+        },
+        {
+            "video_path": "./aic19-track1-mtmc-train/train/S03/c014/vdo.avi",
+            "roi_path": "./aic19-track1-mtmc-train/train/S03/c014/roi.jpg",
+            "det_path": "./aic19-track1-mtmc-train/train/S03/c014/det/det_yolo3.txt",
+            # "det_path": "./aic19-track1-mtmc-train/train/S03/c014/gt/gt.txt",
+            "gt_path": "./aic19-track1-mtmc-train/train/S03/c014/gt/gt.txt",
+            "s_num": "S03",
+            "c_num": "c014",
+        },
+        {
+            "video_path": "./aic19-track1-mtmc-train/train/S03/c015/vdo.avi",
+            "roi_path": "./aic19-track1-mtmc-train/train/S03/c015/roi.jpg",
+            "det_path": "./aic19-track1-mtmc-train/train/S03/c015/det/det_yolo3.txt",
+            # "det_path": "./aic19-track1-mtmc-train/train/S03/c015/gt/gt.txt",
+            "gt_path": "./aic19-track1-mtmc-train/train/S03/c015/gt/gt.txt",
+            "s_num": "S03",
+            "c_num": "c015",
+        }
     ]
 
     for video in videos_s03:
