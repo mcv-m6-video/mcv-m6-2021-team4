@@ -23,7 +23,7 @@ colors = {
 color_ids = {}
 
 
-def draw_boxes(image, boxes, tracker,  color='g', linewidth=2, det=False, boxIds=False, old=False):
+def draw_boxes(image, boxes, tracker=None, color='g', linewidth=2, det=False, boxIds=False, old=False):
     rgb = colors[color]
     for box in boxes:
         # print(box.id)
@@ -37,8 +37,10 @@ def draw_boxes(image, boxes, tracker,  color='g', linewidth=2, det=False, boxIds
             else:
                 cv2.putText(image, str(box.id), (int(box.xtl), int(box.ytl) + 20), cv2.FONT_ITALIC, 0.6, color_ids[box.id], linewidth)
 
-            if len(tracker[box.id])>2:
-                image =cv2.polylines(image,[np.array(tracker[box.id])],False,color_ids[box.id],linewidth)
+            if tracker is not None:
+                if box.id in tracker:
+                    if len(tracker[box.id])>2:
+                        image =cv2.polylines(image,[np.array(tracker[box.id])],False,color_ids[box.id],linewidth)
 
             # if len(kalman_predictions[box.id])>2:
             #     image =cv2.polylines(image,[np.array(kalman_predictions[box.id])],False,color_ids[box.id],linewidth)

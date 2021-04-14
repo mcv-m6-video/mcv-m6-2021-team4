@@ -5,13 +5,10 @@ from detectron2.utils.logger import setup_logger
 setup_logger()
 
 # import some common libraries
-import numpy as np
-import os, json, cv2, random, sys
+import sys
 # import some common detectron2 utilities
 from detectron2 import model_zoo
-from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
-from detectron2.utils.visualizer import Visualizer
 from detectron2.data import MetadataCatalog, DatasetCatalog
 
 from detectron2.structures import BoxMode
@@ -22,14 +19,9 @@ from detectron2.data import build_detection_test_loader
 
 import argparse
 
-from detectron2.modeling import build_model
-from detectron2.checkpoint import DetectionCheckpointer
-
 sys.path.append('../W1')
 from aicity_reader import read_annotations
-import bounding_box
 
-from LossEvalHook import *
 from MyTrainerAugm import *
 
 def parse_annotation(annotations):

@@ -201,9 +201,10 @@ def train_sota(vidcap, train_len, backSub):
     
     return backSub #return backSub updated
 
-def eval_sota(vidcap, test_len, backSub, params):
-    print("Evaluating SOTA")  
-    gt = read_annotations(params["gt_path"], grouped=True, use_parked=False)
+def eval_sota(vidcap, test_len, backSub, params, init_frame=535, return_detections=False):
+    print("Evaluating SOTA")
+    # gt = read_annotations(params["gt_path"], grouped=True, use_parked=False)
+    gt = read_detections(params['gt_path'], grouped=True)
     frame_id = int(vidcap.get(cv2.CAP_PROP_POS_FRAMES))
 
     detections = []
@@ -254,6 +255,10 @@ def eval_sota(vidcap, test_len, backSub, params):
 
         frame_id += 1
 
-    detections = temporal_filter(group_by_frame(detections), init=535, end=frame_id)
-    rec, prec, ap = voc_evaluation.voc_eval(detections, annotations, ovthresh=0.5, use_confidence=False)   
-    return ap
+    detections = temporal_filter(group_by_frame(detections), init=init_frame, end=frame_id)
+    rec, prec, ap = voc_evaluation.voc_eval(detections, annotations, ovthresh=0.5, use_confidence=False)
+
+    if return_detections:
+        return ap, group_by_frame(detections)
+    else:
+        return ap
