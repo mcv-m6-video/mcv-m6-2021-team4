@@ -302,8 +302,6 @@ if __name__ == "__main__":
         'optical_flow_option': 3,
     }
 
-
-
     vidcap = cv2.VideoCapture(params['video_path'])
     frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
     print("Total frames: ", frame_count)

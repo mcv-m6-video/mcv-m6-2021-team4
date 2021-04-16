@@ -23,7 +23,7 @@ colors = {
 color_ids = {}
 
 
-def draw_boxes(image, boxes, tracker,  color='g', linewidth=2, det=False, boxIds=False, old=False):
+def draw_boxes(image, boxes, tracker=None, color='g', linewidth=2, det=False, boxIds=False, old=False):
     rgb = colors[color]
     for box in boxes:
         # print(box.id)
@@ -37,8 +37,10 @@ def draw_boxes(image, boxes, tracker,  color='g', linewidth=2, det=False, boxIds
             else:
                 cv2.putText(image, str(box.id), (int(box.xtl), int(box.ytl) + 20), cv2.FONT_ITALIC, 0.6, color_ids[box.id], linewidth)
 
-            if len(tracker[box.id])>2:
-                image =cv2.polylines(image,[np.array(tracker[box.id])],False,color_ids[box.id],linewidth)
+            if tracker is not None:
+                if box.id in tracker:
+                    if len(tracker[box.id])>2:
+                        image =cv2.polylines(image,[np.array(tracker[box.id])],False,color_ids[box.id],linewidth)
 
             # if len(kalman_predictions[box.id])>2:
             #     image =cv2.polylines(image,[np.array(kalman_predictions[box.id])],False,color_ids[box.id],linewidth)
@@ -53,12 +55,13 @@ def draw_boxes(image, boxes, tracker,  color='g', linewidth=2, det=False, boxIds
        
     return image
 
-def draw_boxes_old(image, boxes, tracker,  color='g', linewidth=2, det=False, boxIds=False, old=False):
+def draw_boxes_old(image, boxes, tracker,  color='g', linewidth=2, det=False, boxIds=False, old=False, shifted=False):
     rgb = colors[color]
     for box in boxes:
-        image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), colors['r'], linewidth)
-        image = cv2.rectangle(image, (int(box.box_flow[0]), int(box.box_flow[1])), (int(box.box_flow[2]), int(box.box_flow[3])), colors['b'], linewidth)
-    
+        if not shifted:
+            image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), colors['r'], linewidth)
+        else:
+            image = cv2.rectangle(image, (int(box.box_flow[0]), int(box.box_flow[1])), (int(box.box_flow[2]), int(box.box_flow[3])), colors['b'], linewidth)
     return image
 
 
