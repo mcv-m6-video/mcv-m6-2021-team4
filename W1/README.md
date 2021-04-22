@@ -1,9 +1,20 @@
 # Week 1
-
-* Task 1: Add noise to annotations. Understand detection metrics.
-* Task 2: Compute detection metrics vs frames (temporal analysis).
-* Task 3: Optical flow evaluation metrics.
-* Task 4: Visual representation optical flow.
+ 
+The goal of this project is to:
+* **Learn about the databases to be used**
+    * AICityChallenge
+    * KITTI  
+    
+* **Implement and get acquainted with the evaluation metrics**
+    * Mean Intersection over Union
+    * Mean Average Precision  
+    * Mean Square Error in Non-occluded areas
+    * Percentage of Erroneous Pixels in Non-occluded areas
+    
+* **Analyze:**
+    * Effect of different noise additions
+    * IoU vs Time
+    * Optical Flow
 
 ## Execution
  
