@@ -9,13 +9,13 @@
 ## Summary
 This repository contains the code related to the project on 'Video Surveillance for Road Traffic Monitoring' of the [Module 6: Video Analysis](https://pagines.uab.cat/mcv/content/m6-video-analysis)  of the Master in Computer Vision at UAB. 
 
-The aim of this master module was to try to create a solution for the [AI City Challenge](https://www.aicitychallenge.org/) from Nvidia track 3, solving the problem of City-Scale Multi-Camera Vehicle Tracking.
+The aim of this master module is to create a solution for the [AI City Challenge](https://www.aicitychallenge.org/) from Nvidia track 3, solving the problem of City-Scale Multi-Camera Vehicle Tracking.
 
 <div style="text-align:center"><img src="data/reid_gif.gif" /></div>
 
 The final presentation explaining our approach when solving the multi-target single camera and the multi-target multi camera can be found [here](https://docs.google.com/presentation/d/1-ka0uHdX3nTpFE-bp465QMkRlNdr6AbenMTHO1zjoz4/edit?usp=sharing).
 
-The module consists of 5 different delivieries that build up to a complete pipeline. Refer to the specifics `README.md` for further explanations, requirements and the complete code of each week.
+The module consists of 5 different deliveries that build up to a complete pipeline. Refer to the specifics `README.md` for further explanations, requirements and the complete code of each week.
 
 * [Week 1](W1/README.md)
 
