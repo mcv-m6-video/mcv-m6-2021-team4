@@ -13,6 +13,8 @@ The aim of this master module was to try to create a solution for the [AI City C
 
 ![alt text](data/reid_gif.gif)
 
+<div style="text-align:center"><img src="data/reid_gif.gif" /></div>
+
 The final presentation explaining our approach when solving the multi-target single camera and the multi-target multi camera can be found [here](https://docs.google.com/presentation/d/1-ka0uHdX3nTpFE-bp465QMkRlNdr6AbenMTHO1zjoz4/edit?usp=sharing).
 
 The module consists of 5 different delivieries that build up to a complete pipeline. Refer to the specifics `README.md` for further explanations, requirements and the complete code of each week.
