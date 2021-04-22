@@ -1,11 +1,22 @@
 # Week 3
 
-* Task 1_1: Object Detection Off-the-shelf
-* Task 1_2: Fine tune architectures on AICity dataset
-* Task 1_3: Fine tune using cross validation
-* Task 2_1: Object tracking using IOU (max overlap)
-* Task 2_2: Object tracking using Kalman filter
-* Task 3: Object detection and tracking on the official AICity challenge dataset (not included in this repo, as it's only use the implemented alrogithms with another video)
+#### Task 1: Object Detection
++ Off-the-shelf
+   + Faster R-CNN - Detectron2
+   + RetinaNet - Detectron2
+   + YOLOv3 - Pytorch
+   + Mask R-CNN - Keras
++ Fine-tune with our data
++ K-Fold Cross-Validation
+   + Strategy A - First 25% for training - second 75% for test.
+   + Strategy B - First 25% Train (cross-val) - last 75% Test (same as Strategy A).
+   + Strategy C - Random 25% Train (cross-val) - rest for Test
+
+#### Task 2: Object Tracking
++ Tracking by Maximum Overlap
++ Tracking with a Kalman Filter using [SORT](https://github.com/abewley/sort) and [2-D-Kalman-Filter](https://github.com/RahmadSadli/2-D-Kalman-Filter)
++ IDF1 score
+
 
 ## Execution
  
