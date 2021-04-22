@@ -212,6 +212,19 @@ def eval_tracking(params, det):
     print(summary)
 
 
+def save_detections(det, det_path):
+    for frame_id, boxes in det.items():
+        for box in boxes:
+            # Format: <frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z>
+            det = str(box.frame + 1) + ',' + str(box.id) + ',' + str(box.xtl) + ',' + str(box.ytl) + ',' + str(
+                box.width) + ',' + str(box.height) + ',' + str(1) + ',-1,-1,-1\n'
+
+            with open(det_path, 'a+') as f:
+                f.write(det)
+
+    return
+
+
 def parse_args(args=sys.argv[1:]):
     parser = argparse.ArgumentParser()
 
@@ -229,32 +242,44 @@ def parse_args(args=sys.argv[1:]):
     parser.add_argument('--data_path', type=str, default="./data/AICity_data/train",
                         help='path to sequences of AICity')
 
-    parser.add_argument('--seq', type=str, default='S03/c010',
+    parser.add_argument('--seqs', type=lambda s: [str(item) for item in s.split(',')], default=['S03/c010'],
                         help='sequence/camera from AICity dataset')
 
     parser.add_argument('--show_boxes', action='store_true',
                         help='show bounding boxes')
 
-    # parser.add_argument('--save_results', action='store_true',
-    #                     help='save detections')
+    parser.add_argument('--save_filtered', action='store_true',
+                        help='save filtered detections (without parked cars)')
 
     return parser.parse_args(args)
 
 
-def args_to_params(args):
+def args_to_params(args, seq):
     return {
         'track_method': args.track_method,
-        'det_path': os.path.join(args.det_dir, args.det_method, args.seq, det_filename[args.det_method]),
-        'video_path': os.path.join(args.data_path, args.seq, 'vdo.avi'),
-        'gt_path': os.path.join(args.data_path, args.seq, 'gt/gt.txt'),
+        'det_path': os.path.join(args.det_dir, args.det_method, seq, det_filename[args.det_method]),
+        'video_path': os.path.join(args.data_path, seq, 'vdo.avi'),
+        'gt_path': os.path.join(args.data_path, seq, 'gt/gt.txt'),
         'show_boxes': args.show_boxes,
     }
 
 
 if __name__ == "__main__":
     args = parse_args()
-    params = args_to_params(args)
 
-    det_filtered = filter_detections_parked(params)
+    for seq in args.seqs:
+        print('---------------------------------------------------------')
+        print('Seq: ', seq)
+        params = args_to_params(args, seq)
 
-    eval_tracking(params, det_filtered)
+        det_filtered = filter_detections_parked(params)
+
+        if args.save_filtered:
+            save_path = os.path.join(args.det_dir, args.det_method, seq, args.track_method + '_filtered_detections.txt')
+            save_detections(det_filtered, save_path)
+            print('Filtered detections saved in ', save_path)
+
+        # root_path = '/home/oscar/workspace/master/modules/m6/project/mcv-m6-2021-team4/W5/task1_1/detections/faster'
+        # det_filtered = read_detections(os.path.join(root_path, seq, 'overlap_filtered_detections.txt'), grouped=True)
+
+        eval_tracking(params, det_filtered)

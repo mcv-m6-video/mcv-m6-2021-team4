@@ -1,11 +1,11 @@
 import os, sys, cv2, argparse, torch
 from tqdm import tqdm
 
-# from detectron2 import model_zoo
-# from detectron2.engine import DefaultPredictor
-# from detectron2.config import get_cfg
-# from detectron2.utils.logger import setup_logger
-# setup_logger()
+from detectron2 import model_zoo
+from detectron2.engine import DefaultPredictor
+from detectron2.config import get_cfg
+from detectron2.utils.logger import setup_logger
+setup_logger()
 
 sys.path.append('./W1')
 from aicity_reader import read_annotations, read_detections, group_by_frame
@@ -122,36 +122,36 @@ if __name__ == '__main__':
 
         weights_path = './W3/results/task1_2_all/faster_rcnn/lr_0_001_iter_5000_batch_512'
 
-        # cfg = get_cfg()
-        # cfg.merge_from_file(model_zoo.get_config_file(model))
-        # cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
-        # cfg.MODEL.WEIGHTS = os.path.join(weights_path, "model_final.pth")  # path to the model we just trained
-        #
-        # cfg.DATALOADER.NUM_WORKERS = 2
-        # cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
-        #
-        # predictor = DefaultPredictor(cfg)
-        #
-        # vidcap = cv2.VideoCapture(params['video_path'])
-        # num_frames = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
-        #
-        # for frame_id in tqdm(range(num_frames), desc='Detecting cars in video sequence...'):
-        #     _, frame = vidcap.read()
-        #
-        #     outputs = predictor(frame)
-        #
-        #     pred_boxes = outputs["instances"].pred_boxes.to("cpu")
-        #     scores = outputs["instances"].scores.to("cpu")
-        #
-        #     for idx in range(len(pred_boxes)):
-        #         box = pred_boxes[idx].tensor.numpy()[0]
-        #
-        #         # Format: <frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z>
-        #         det = str(frame_id + 1) + ',-1,' + str(box[0]) + ',' + str(box[1]) + ',' + str(
-        #             box[2] - box[0]) + ',' + str(box[3] - box[1]) + ',' + str(scores[idx].item()) + ',-1,-1,-1\n'
-        #
-        #         with open(det_path, 'a+') as f:
-        #             f.write(det)
+        cfg = get_cfg()
+        cfg.merge_from_file(model_zoo.get_config_file(model))
+        cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
+        cfg.MODEL.WEIGHTS = os.path.join(weights_path, "model_final.pth")  # path to the model we just trained
+
+        cfg.DATALOADER.NUM_WORKERS = 2
+        cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
+
+        predictor = DefaultPredictor(cfg)
+
+        vidcap = cv2.VideoCapture(params['video_path'])
+        num_frames = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+        for frame_id in tqdm(range(num_frames), desc='Detecting cars in video sequence...'):
+            _, frame = vidcap.read()
+
+            outputs = predictor(frame)
+
+            pred_boxes = outputs["instances"].pred_boxes.to("cpu")
+            scores = outputs["instances"].scores.to("cpu")
+
+            for idx in range(len(pred_boxes)):
+                box = pred_boxes[idx].tensor.numpy()[0]
+
+                # Format: <frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z>
+                det = str(frame_id + 1) + ',-1,' + str(box[0]) + ',' + str(box[1]) + ',' + str(
+                    box[2] - box[0]) + ',' + str(box[3] - box[1]) + ',' + str(scores[idx].item()) + ',-1,-1,-1\n'
+
+                with open(det_path, 'a+') as f:
+                    f.write(det)
 
         # gt = read_annotations(os.path.join(args.data_path, args.seq, 'ai_challenge_s03_c010-full_annotation.xml'), grouped=True, use_parked=True)
         gt = read_detections(params['gt_path'], grouped=True)
