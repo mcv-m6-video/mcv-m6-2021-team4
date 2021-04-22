@@ -9,7 +9,7 @@ from pytorch_metric_learning.utils import common_functions as c_f
 from pytorch_metric_learning.utils.inference import MatchFinder, InferenceModel
 from pytorch_metric_learning.distances import CosineSimilarity
 
-from reid_utils import get_id_frames_cam, get_data_loader, compare_cams, compare_cams_old, merge_dicts, invert_dict, load_trunk_embedder
+from reid_utils import get_id_frames_cam, get_data_loader, compare_cams, merge_dicts, invert_dict, load_trunk_embedder
 from eval_tracking_mtmc import evaluate_mtmc
 
 def parse_args(args=sys.argv[1:]):
@@ -21,7 +21,7 @@ def parse_args(args=sys.argv[1:]):
     parser.add_argument('--trunk_model', type=str, default='./W5/task2/model/0001_32_256/trunk.pth',
                         help='path to trunk model')
     parser.add_argument('--embedder_model', type=str, default='./W5/task2/model/0001_32_256/embedder.pth',
-                        help='path to trunk model')
+                        help='path to embedder model')
     parser.add_argument('--save_reid', type=str, default='./W5/det/reid',
                         help='path to save reid detections')
     parser.add_argument('--show_reid', action='store_true',
