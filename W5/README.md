@@ -1,7 +1,7 @@
 # Week 5
 
 #### Task 1: Multi-target single camera tracking
-.
+
 * Applying the best method from last week on all the cameras from Sequence S03 of the AI City Challenge Track 3
 * Report best results for each camera.
 
