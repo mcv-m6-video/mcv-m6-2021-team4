@@ -11,6 +11,8 @@ This repository contains the code related to the project on 'Video Surveillance 
 
 The aim of this master module was to try to create a solution for the [AI City Challenge](https://www.aicitychallenge.org/) from Nvidia track 3, solving the problem of City-Scale Multi-Camera Vehicle Tracking.
 
+![alt text](data/reid_gif.gif)
+
 The final presentation explaining our approach when solving the multi-target single camera and the multi-target multi camera can be found [here](https://docs.google.com/presentation/d/1-ka0uHdX3nTpFE-bp465QMkRlNdr6AbenMTHO1zjoz4/edit?usp=sharing).
 
 The module consists of 5 different delivieries that build up to a complete pipeline. Refer to the specifics `README.md` for further explanations, requirements and the complete code of each week.
