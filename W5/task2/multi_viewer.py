@@ -1,10 +1,11 @@
 import cv2
 import numpy as np
 from tqdm import tqdm
-import os, sys
+import sys
 
-sys.path.append('./W1')
+
 from aicity_reader import read_annotations, read_detections, group_by_frame
+
 
 def filter_bboxes_size(det_bboxes):
     filtered_bboxes = []
@@ -20,42 +21,39 @@ colors = {
     'b': (255, 0, 0),
     'w': (255,255,255)
     }
-
-color_ids = {}
-
-# color_ids = {'16': (0, 0, 0),
-#     63: (0, 0, 255),
-#     69: (0, 255, 0),
-#     202: (255,0,0),
-#     482: (255, 255, 255),
-#     746: (255, 255, 0),
-#     903: (255, 0, 255),
-#     1044: (0,255,255),
-#     }
+color_ids = {'16': (0, 0, 0),
+    '63': (0, 0, 255),
+    '69': (0, 255, 0),
+    '202': (255,0,0),
+    '482': (255, 255, 255),
+    '746': (255, 255, 0),
+    '903': (255, 0, 255),
+    '1044': (0,255,255),
+    }
 
 
-def draw_boxes(image, boxes, tracker,  color='g', linewidth=5, det=False, boxIds=False):
+def draw_boxes(image, boxes, tracker,  color='g', linewidth=5, det=False, boxIds=False, old=False):
     rgb = colors[color]
     for box in boxes:
         ##print(box.id)
         if boxIds:
-            if box.id in color_ids:
-                image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)),
-                                      color_ids[box.id], linewidth)
-
+            if box.id in list(color_ids.keys()):
+                pass
             else:
                 color_ids[box.id]=np.random.uniform(0,256,size=3)
-
-            cv2.putText(image, str(box.id), (int(box.xtl), int(box.ytl) + 20), cv2.FONT_ITALIC, 2.2,
-                        (0, 0, 255), 3)
-
-            #
-            # cv2.putText(image, str(box.id), (int(box.xtl), int(box.ytl) + 20), cv2.FONT_ITALIC, 0.6, color_ids[box.id], linewidth)
+            if old:
+                cv2.putText(image, str(box.id), (int(box.xtl), int(box.ytl) + 120), cv2.FONT_ITALIC, 0.6, color_ids[box.id], linewidth)
+            else:
+                cv2.putText(image, str(box.id), (int(box.xtl), int(box.ytl) + 20), cv2.FONT_ITALIC, 0.6, color_ids[box.id], linewidth)
 
             #if len(tracker[box.id])>2:
              #   image =cv2.polylines(image,[np.array(tracker[box.id])],False,color_ids[box.id],linewidth)
 
-            # image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), color_ids[box.id], linewidth)
+            # if len(kalman_predictions[box.id])>2:
+            #     image =cv2.polylines(image,[np.array(kalman_predictions[box.id])],False,color_ids[box.id],linewidth)
+
+
+            image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), color_ids[box.id], linewidth)
         else:
             image = cv2.rectangle(image, (int(box.xtl), int(box.ytl)), (int(box.xbr), int(box.ybr)), rgb, linewidth)
 
@@ -65,11 +63,12 @@ def draw_boxes(image, boxes, tracker,  color='g', linewidth=5, det=False, boxIds
     return image
 if __name__ == "__main__":
     params = {
-        'video_path': "./data/AICity_data/train/S03",
-        'det_path': "./W5/task2/gridsearch/06_3_5" # 06_3_5
+        'data_path': "D:\\Ian\\UNI\\5_Master_CV\\M6\\Project\\Data\\aicity2021\\AIC21_Track3_MTMC_Tracking\\train\\S03\\",
+        # 'det_path': "./data/AICity_data/train/S03/c010/det/det_mask_rcnn.txt", #MASK RCNN
         #'roi_path': "./data/AICity_data/train/S03/c010/roi.jpg",
 
     }
+
 
     cams = ['c010', 'c011', 'c012', 'c013', 'c014', 'c015']
     
@@ -94,10 +93,10 @@ if __name__ == "__main__":
     cam_dicts = {}
     
     for cam in cams:
-        vidcap = cv2.VideoCapture(os.path.join(params['video_path'], cam, 'vdo.avi'))
+        vidcap = cv2.VideoCapture(params['data_path']+"{}\\vdo.avi".format(cam))
         #vidcap.set(cv2.CAP_PROP_POS_FRAMES, frame_offset[cam])           
         
-        det = read_detections(os.path.join(params['det_path'], cam, 'overlap_reid_detections.txt'), grouped=True)
+        det = read_detections(params['data_path']+"{}\\overlap_reid_detections.txt".format(cam), grouped=True, confidenceThr=0.4)
         
         cam_dicts[cam] = [vidcap,int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT)), det]
         
@@ -105,11 +104,10 @@ if __name__ == "__main__":
         
     frame_id = 0   
     frames = {}
-    last_frame = np.zeros(shape=(720,1080,3))
+    last_frame = np.zeros(shape=(1080,1920,3))
     ids = []
     while(True):
-        # if frame_id < 400:
-        if True:
+        if frame_id < 400:
             for cam in cams:
                 if frame_id > + frame_offset[cam] and frame_id < cam_dicts[cam][1]+ frame_offset[cam]:
                     _, frame = cam_dicts[cam][0].read()
@@ -124,7 +122,7 @@ if __name__ == "__main__":
                     
                     ##frame = draw_boxes_old(image=frame, boxes=det_bboxes, tracker=None,  color='g', linewidth=2)
                     frame = draw_boxes(image=frame, boxes=det_bboxes, tracker=None,boxIds = True,  color='g', linewidth=5)
-                    frame = cv2.resize(frame,(1080,720))
+                    frame = cv2.resize(frame,(1920,1080))
                     frames[cam] = frame
                     ##last_frame = frame
                 else:
@@ -136,18 +134,16 @@ if __name__ == "__main__":
             hor2 = np.concatenate((frames['c014'], frames['c015'], frames['c010']), axis=1)  
             ## concatanate image Vertically
             vert = np.concatenate((hor2, hor1), axis=0)
-            vert = cv2.resize(vert,(1080,720))
+            vert = cv2.resize(vert,(1920,1080))
             
             '''
             cv2.imshow('VERTICAL', vert)
             cv2.waitKey(10)
             '''
           
-            # cv2.imwrite('D:\\Ian\\UNI\\5_Master_CV\\M6\\Project\\week_5\\results\\allcams_track\\{}.png'.format(10000+frame_id),vert)
-
-            cv2.imshow('vert', vert/255)
-            cv2.waitKey(1)
-
+            cv2.imwrite('D:\\Ian\\UNI\\5_Master_CV\\M6\\Project\\week_5\\results\\allcams_track\\{}.png'.format(10000+frame_id),vert)
+            
+            
             frame_id += 1
             if frame_id >= cam_dicts['c012'][1]+ frame_offset['c012']:
                 break
