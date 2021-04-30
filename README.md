@@ -26,3 +26,5 @@ The module consists of 5 different deliveries that build up to a complete pipeli
 * [Week 4](W4/README.md)
 
 * [Week 5](W5/README.md)
+
+[Final Report](https://github.com/mcv-m6-video/mcv-m6-2021-team4/blob/main/documentation/Video%20Surveillance%20for%20Road%20Traffic%20Monitoring.pdf)
